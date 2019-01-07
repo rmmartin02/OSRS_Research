@@ -36,33 +36,24 @@ def getItemInfo(item):
     r = requests.get(URL + '/w/' + item)
     soup = BeautifulSoup(r.text, features="html.parser")
     infoBox = soup.find_all('div',{'class':'infobox-wrapper'})[0]
+    arr = []
+    #if len(infoBox.find_all('div',{'class':'infobox-buttons'}))>0:
+        #variants = infoBox.find_all('div', {'class': 'infobox-buttons'})[0].contents
+        #for v in variants:
+           # arr.append(parseItemInfo(item+v['data-switch-anchor']))
+   # else:
+       # arr.append(parseItemInfo(item))
+    arr.append(parseItemInfo(item))
+    return arr
+
+def parseItemInfo(item):
+    print(item)
+    r = requests.get(URL + '/w/' + item)
+    soup = BeautifulSoup(r.text, features="html.parser")
+    infoBox = soup.find_all('div',{'class':'infobox-wrapper'})[0]
+    print(r.text)
     info = {}
-
-    if len(infoBox.find_all('div',{'class':'infobox-buttons'}))>0:
-        variants = infoBox.find_all('div', {'class': 'infobox-buttons'})[0].contents
-        variant = variants[0].text
-        exInfo = getExchangeInfo(item + variant)
-        if exInfo!=None:
-            info['exchangePrice'] = exInfo['price']
-            info['buyLimit'] = exInfo['limit']
-            item = item + variant
-        else:
-            variant = variants[-1].text
-            exInfo = getExchangeInfo(item + variant)
-            if exInfo != None:
-                info['exchangePrice'] = exInfo['price']
-                info['buyLimit'] = exInfo['limit']
-                item = item + variant
-            else:
-                exInfo = getExchangeInfo(item)
-                info['exchangePrice'] = exInfo['price']
-                info['buyLimit'] = exInfo['limit']
-    else:
-        exInfo = getExchangeInfo(item)
-        info['exchangePrice'] = exInfo['price']
-        info['buyLimit'] = exInfo['limit']
-
-    info['name'] = item
+    info['name'] =  infoBox.find_all("th",{'data-attr-param':'name'})[0].text
     info['released'] = infoBox.find_all("th", text="Released")[0].parent.td.text[:]
     info['update'] = 'N/A'
     if 'Update' in infoBox.find_all("th", text="Released")[0].parent.td.text[8:]:
@@ -87,6 +78,7 @@ def getItemInfo(item):
         info['storePrice'] = -1
     info['weight'] = float(infoBox.find_all("th", text="Weight")[0].parent.td.text[:-3])
     info['categories'] = [c.text for c in soup.find(id='catlinks').find_all('a') if 'href' in c.attrs and 'Category' in c['href']]
+    print(infoBox.find_all("a", text="info")[0])
     print(info)
     return info
 
@@ -98,30 +90,31 @@ def storeItemInfo():
     with open('itemsInfo.csv','w') as f:
         i = 0
         for item in items:
-            print(item)
-            info = getItemInfo(item)
-            #print(info)
-            info = [info['name'],
-                    info['released'],
-                    info['update'],
-                    info['members'],
-                    info['questItem'],
-                    info['tradeable'],
-                    info['equipable'],
-                    info['stackable'],
-                    info['noteable'],
-                    info['destroy'],
-                    info['highAlch'],
-                    info['lowAlch'],
-                    info['storePrice'],
-                    info['exchangePrice'],
-                    info['buyLimit'],
-                    info['weight'],
-                    info['categories']]
-            info = [str(i) for i in info]
-            f.write(','.join(info)+'\n')
-            i+=1
-            print('{}/{} ({})'.format(i,len(items),float(i)/float(len(items))))
+            item = 'Dragon_dagger'
+            variants = getItemInfo(item)
+            for info in variants:
+                #print(info)
+                info = [info['name'],
+                        info['released'],
+                        info['update'],
+                        info['members'],
+                        info['questItem'],
+                        info['tradeable'],
+                        info['equipable'],
+                        info['stackable'],
+                        info['noteable'],
+                        info['destroy'],
+                        info['highAlch'],
+                        info['lowAlch'],
+                        info['storePrice'],
+                        info['exchangePrice'],
+                        info['buyLimit'],
+                        info['weight'],
+                        info['categories']]
+                info = [str(i) for i in info]
+                f.write(','.join(info)+'\n')
+                i+=1
+                print('{}/{} ({})'.format(i,len(items),float(i)/float(len(items))))
 
 def getExchangeInfo(item):
     '''return {
@@ -141,10 +134,13 @@ def getExchangeInfo(item):
     lowalch    = 1260
     }'''
     r = requests.get('{}/w/Module:Exchange/{}?action=raw'.format(URL, item))
-    if len(r.text) == 0:
-        return None
-    arr = r.text[8:-1].split(',')
     info = {}
+    if len(r.text) == 0:
+        info['price'] = -1
+        info['limit'] = -1
+        return info
+    print(r.text)
+    arr = r.text[8:-1].split(',')
     for a in arr:
         if 'price' in a:
             info['price'] = int(a.split('=')[1])

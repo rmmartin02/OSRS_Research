@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 import re
+import copy
 
 URL = 'https://oldschool.runescape.wiki'
 
@@ -46,14 +47,86 @@ def getItemInfo(item):
     arr.append(parseItemInfo(item))
     return arr
 
-def parseItemInfo(item):
+def parsePrice(priceString):
+    if 'Not sold' in priceString:
+        return -1
+    if priceString == '-':
+        return -1
+    return int(re.sub("\D","",priceString))
+
+def parseVariants(item):
     print(item)
     r = requests.get(URL + '/w/' + item)
     soup = BeautifulSoup(r.text, features="html.parser")
+    infoBox = soup.find_all('div', {'class': 'infobox-wrapper'})[0]
+    buttons = infoBox.find_all('div', {'class': 'infobox-buttons'})
+    if len(buttons)>0:
+        hiddenInfo = infoBox.find_all('div', {'class': 'infobox-switch-resources hidden'})[0]
+        print(hiddenInfo)
+        with open('info.html','w') as f:
+            f.write(str(hiddenInfo).replace('>','>\n'))
+        names = []
+        try:
+            names = [n.text.replace(' ','_') for n in hiddenInfo.find_all('span',{'data-attr-param':'name'})[0].contents]
+            print(names)
+        except:
+            pass
+        releases = []
+        updates = []
+        try:
+            dates = hiddenInfo.find_all('span',{'data-attr-param':'release'})[0]
+            releases = [n.text.replace(' (Update)', '') for n in dates.contents[1:]]
+            updates = [n['href'] for n in dates.find_all('a',text='Update')]
+            print(releases)
+            print(updates)
+        except IndexError:
+            pass
+        storePrices = []
+        try:
+            storePrices = [parsePrice(n.text) for n in hiddenInfo.find_all('span',{'data-attr-param':'store'})[0].contents[1:]]
+            print(storePrices)
+        except IndexError:
+            pass
+        exchange = hiddenInfo.find_all('span',{'data-attr-param':'exchange'})[0]
+        exURLs = {}
+        for n in exchange.find_all('a'):
+            exURLs[n['title'].split(':')[1].replace(' ','_')] = n['href'].split(':')[1]
+        print(exURLs)
+
+        defInfo = parseItemInfo([key for key in exURLs][0])
+        infoDicts = []
+        #only incldue items in the GE
+        for it in exURLs:
+            #stil working on this
+            info = copy.deepcopy(defInfo)
+            try:
+                i = names.index(it)
+                info['name'] = names[i]
+            except:
+                pass
+            if len(releases)>i:
+                info['released'] = releases[i]
+            if len(updates) > i:
+                info['update'] = updates[i]
+            if len(storePrices) > i:
+                info['storePrice'] = storePrices[i]
+            exInfo = getExchangeInfo(exURLs[it])
+            info['highAlch'] = exInfo['hialch']
+            info['lowAlch'] = exInfo['lowalch']
+            info['exchangePrice'] = exInfo['price']
+            info['buyLimit'] = exInfo['limit']
+            infoDicts.append(info)
+        return infoDicts
+    else:
+        return [parseItemInfo(item)]
+
+
+def parseItemInfo(item):
+    r = requests.get(URL + '/w/' + item)
+    soup = BeautifulSoup(r.text, features="html.parser")
     infoBox = soup.find_all('div',{'class':'infobox-wrapper'})[0]
-    print(r.text)
     info = {}
-    info['name'] =  infoBox.find_all("th",{'data-attr-param':'name'})[0].text
+    info['name'] =  item
     info['released'] = infoBox.find_all("th", text="Released")[0].parent.td.text[:]
     info['update'] = 'N/A'
     if 'Update' in infoBox.find_all("th", text="Released")[0].parent.td.text[8:]:
@@ -78,8 +151,11 @@ def parseItemInfo(item):
         info['storePrice'] = -1
     info['weight'] = float(infoBox.find_all("th", text="Weight")[0].parent.td.text[:-3])
     info['categories'] = [c.text for c in soup.find(id='catlinks').find_all('a') if 'href' in c.attrs and 'Category' in c['href']]
-    print(infoBox.find_all("a", text="info")[0])
-    print(info)
+    exInfo = getExchangeInfo(item)
+    info['highAlch'] = exInfo['hialch']
+    info['lowAlch'] = exInfo['lowalch']
+    info['exchangePrice'] = exInfo['price']
+    info['buyLimit'] = exInfo['limit']
     return info
 
 def storeItemInfo():
@@ -89,10 +165,8 @@ def storeItemInfo():
         items = [i.split(',')[0] for i in lines]
     with open('itemsInfo.csv','w') as f:
         i = 0
-        for item in items:
-            item = 'Dragon_dagger'
-            variants = getItemInfo(item)
-            for info in variants:
+        for i in range(len(items)):
+            for info in parseVariants(items[i]):
                 #print(info)
                 info = [info['name'],
                         info['released'],
@@ -113,39 +187,28 @@ def storeItemInfo():
                         info['categories']]
                 info = [str(i) for i in info]
                 f.write(','.join(info)+'\n')
-                i+=1
-                print('{}/{} ({})'.format(i,len(items),float(i)/float(len(items))))
+            print('{}/{} ({})'.format(i,len(items),float(i)/float(len(items))))
+
 
 def getExchangeInfo(item):
-    '''return {
-    itemId     = 11095,
-    price      = 2263,
-    last       = 2254,
-    date       = '06 January 2019 00:00:00 (UTC)',
-    lastDate   = '05 January 2019 00:00:00 (UTC)',
-    icon       = 'Abyssal bracelet.png',
-    item       = 'Abyssal bracelet',
-    value      = 4200,
-    limit      = 10000,
-    members    = true,
-    category   = nil,
-    examine    = 'Makes using the Abyss just slightly safer.',
-    hialch     = 2520,
-    lowalch    = 1260
-    }'''
+    item = item.replace('+','%2B')
     r = requests.get('{}/w/Module:Exchange/{}?action=raw'.format(URL, item))
     info = {}
+    keys = ['price', 'value', 'limit', 'hialch', 'lowalch']
+    for k in keys:
+        info[k] = -1
     if len(r.text) == 0:
-        info['price'] = -1
-        info['limit'] = -1
         return info
-    print(r.text)
-    arr = r.text[8:-1].split(',')
+    arr = r.text.split('\n')
+    print(arr)
     for a in arr:
-        if 'price' in a:
-            info['price'] = int(a.split('=')[1])
-        if 'limit' in a:
-            info['limit'] = int(a.split('=')[1])
+        for k in keys:
+            if k in a and 'examine' not in a:
+                try:
+                    info[k] = a.split('=')[1]
+                except ValueError:
+                    info[k] = -1
+    print(info)
     return info
 
 def getExchangePrices(item):
@@ -158,4 +221,3 @@ def getExchangePrices(item):
 
 if __name__ == "__main__":
     storeItemInfo()
-    #print(getExchangeInfo('Abyssal_dagger'))

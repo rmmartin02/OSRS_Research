@@ -62,13 +62,13 @@ def parseVariants(item):
     buttons = infoBox.find_all('div', {'class': 'infobox-buttons'})
     if len(buttons)>0:
         hiddenInfo = infoBox.find_all('div', {'class': 'infobox-switch-resources hidden'})[0]
-        print(hiddenInfo)
+        #print(hiddenInfo)
         with open('info.html','w') as f:
             f.write(str(hiddenInfo).replace('>','>\n'))
         names = []
         try:
             names = [n.text.replace(' ','_') for n in hiddenInfo.find_all('span',{'data-attr-param':'name'})[0].contents]
-            print(names)
+            #print(names)
         except:
             pass
         releases = []
@@ -77,21 +77,21 @@ def parseVariants(item):
             dates = hiddenInfo.find_all('span',{'data-attr-param':'release'})[0]
             releases = [n.text.replace(' (Update)', '') for n in dates.contents[1:]]
             updates = [n['href'] for n in dates.find_all('a',text='Update')]
-            print(releases)
-            print(updates)
+            #print(releases)
+            #print(updates)
         except IndexError:
             pass
         storePrices = []
         try:
             storePrices = [parsePrice(n.text) for n in hiddenInfo.find_all('span',{'data-attr-param':'store'})[0].contents[1:]]
-            print(storePrices)
+            #print(storePrices)
         except IndexError:
             pass
         exchange = hiddenInfo.find_all('span',{'data-attr-param':'exchange'})[0]
         exURLs = {}
         for n in exchange.find_all('a'):
             exURLs[n['title'].split(':')[1].replace(' ','_')] = n['href'].split(':')[1]
-        print(exURLs)
+        #print(exURLs)
 
         defInfo = parseItemInfo([key for key in exURLs][0])
         infoDicts = []
@@ -99,6 +99,7 @@ def parseVariants(item):
         for it in exURLs:
             #stil working on this
             info = copy.deepcopy(defInfo)
+            i = 10000000000
             try:
                 i = names.index(it)
                 info['name'] = names[i]
@@ -143,13 +144,20 @@ def parseItemInfo(item):
     else:
         info['noteable'] = convertYN(infoBox.find_all("th", text="Noteable")[0].parent.td.text[:])
     info['destroy'] = infoBox.find_all("th", text="Destroy")[0].parent.td.text[:]
-    info['highAlch'] = int(re.sub("\D","",infoBox.find_all("th", text="High alch")[0].parent.td.text))
-    info['lowAlch'] = int(re.sub("\D","",infoBox.find_all("th", text="Low alch")[0].parent.td.text))
+    try:
+        info['highAlch'] = int(re.sub("\D","",infoBox.find_all("th", text="High alch")[0].parent.td.text))
+        info['lowAlch'] = int(re.sub("\D","",infoBox.find_all("th", text="Low alch")[0].parent.td.text))
+    except IndexError:
+        info['highAlch'] = -1
+        info['lowAlch'] = -1
     try:
         info['storePrice'] = int(re.sub("\D","",infoBox.find_all("th", text="Store price")[0].parent.td.text))
     except ValueError:
         info['storePrice'] = -1
-    info['weight'] = float(infoBox.find_all("th", text="Weight")[0].parent.td.text[:-3])
+    try:
+        info['weight'] = float(infoBox.find_all("th", text="Weight")[0].parent.td.text[:-3])
+    except ValueError:
+        info['weight'] = 0
     info['categories'] = [c.text for c in soup.find(id='catlinks').find_all('a') if 'href' in c.attrs and 'Category' in c['href']]
     exInfo = getExchangeInfo(item)
     info['highAlch'] = exInfo['hialch']
@@ -163,9 +171,13 @@ def storeItemInfo():
     with open('itemURLs.csv', 'r') as f:
         lines = f.readlines()
         items = [i.split(',')[0] for i in lines]
-    with open('itemsInfo.csv','w') as f:
-        i = 0
-        for i in range(len(items)):
+    start = 0
+    with open('itemsInfo.csv','r') as f:
+        lines = f.readlines()
+        name = lines[-1].split(',')[0]
+        start =  items.index(name)+1
+    with open('itemsInfo.csv','a') as f:
+        for i in range(start,len(items)):
             for info in parseVariants(items[i]):
                 #print(info)
                 info = [info['name'],
@@ -187,7 +199,7 @@ def storeItemInfo():
                         info['categories']]
                 info = [str(i) for i in info]
                 f.write(','.join(info)+'\n')
-            print('{}/{} ({})'.format(i,len(items),float(i)/float(len(items))))
+            print('{}/{} ({})'.format(i+1,len(items),(float(i+1)/float(len(items)))*100))
 
 
 def getExchangeInfo(item):
@@ -200,7 +212,7 @@ def getExchangeInfo(item):
     if len(r.text) == 0:
         return info
     arr = r.text.split('\n')
-    print(arr)
+    #print(arr)
     for a in arr:
         for k in keys:
             if k in a and 'examine' not in a:
@@ -208,7 +220,7 @@ def getExchangeInfo(item):
                     info[k] = a.split('=')[1]
                 except ValueError:
                     info[k] = -1
-    print(info)
+    #print(info)
     return info
 
 def getExchangePrices(item):

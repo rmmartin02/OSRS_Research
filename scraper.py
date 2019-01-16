@@ -174,8 +174,9 @@ def storeItemInfo():
     start = 0
     with open('itemsInfo.csv','r') as f:
         lines = f.readlines()
-        name = lines[-1].split(',')[0]
-        start =  items.index(name)+1
+        if len(lines)>0:
+            name = lines[-1].split(',')[0]
+            start =  items.index(name)+1
     with open('itemsInfo.csv','a') as f:
         for i in range(start,len(items)):
             for info in parseVariants(items[i]):

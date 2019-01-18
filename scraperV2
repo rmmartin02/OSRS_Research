@@ -1,11 +1,64 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
+import requests
+import re
 
 URL = 'https://oldschool.runescape.wiki'
 
+def convertYN(yn):
+    if yn == 'Yes' or yn == 'yes':
+        return True
+    return False
+
+def getItemInfo(item):
+    r = requests.get(URL + '/w/' + item)
+    soup = BeautifulSoup(r.text, features="html.parser")
+    infoBox = soup.find_all('div',{'class':'infobox-wrapper'})[0]
+    arr = []
+    #if len(infoBox.find_all('div',{'class':'infobox-buttons'}))>0:
+        #variants = infoBox.find_all('div', {'class': 'infobox-buttons'})[0].contents
+        #for v in variants:
+           # arr.append(parseItemInfo(item+v['data-switch-anchor']))
+   # else:
+       # arr.append(parseItemInfo(item))
+    arr.append(parseItemInfo(item))
+    return arr
+
+def parsePrice(priceString):
+    if 'Not sold' in priceString:
+        return -1
+    if priceString == '-':
+        return -1
+    return int(re.sub("\D","",priceString))
+
+def getExchangeInfo(item):
+    item = item.replace('+','%2B')
+    r = requests.get('{}/w/Module:Exchange/{}?action=raw'.format(URL, item))
+    info = {}
+    keys = ['price', 'value', 'limit', 'hialch', 'lowalch']
+    for k in keys:
+        info[k] = -1
+    if len(r.text) == 0:
+        return info
+    arr = r.text.split('\n')
+    print(arr)
+    for a in arr:
+        for k in keys:
+            if k in a and 'examine' not in a:
+                try:
+                    info[k] = a.split('=')[1]
+                except ValueError:
+                    info[k] = -1
+    #print(info)
+    return info
+
 def parseItemInfo(item):
+    pass
+
+def parseVariantInfo(item):
+    # https://oldschool.runescape.wiki/w/Template:Infobox_Item/doc
     request = URL + '/w/' + item
-    browser = webdriver.Chrome()
+    browser = webdriver.Chrome('/scratch/rmmartin/chromedriver')
     browser.get(request)  # navigate to page behind login
     r = browser.execute_script("return document.body.innerHTML")  # returns the inner HTML as a string
     soup = BeautifulSoup(r, features="html.parser")
@@ -13,6 +66,65 @@ def parseItemInfo(item):
     buttons = infoBox.find_all('div', {'class': 'infobox-buttons'})
     with open('info.html', 'w') as f:
         f.write(str(infoBox).replace('>', '>\n'))
+    info = {}
+    info['name'] = infoBox.find('th',{'class':'infobox-header'}).text
+    info['image'] = infoBox.find('td',{'class':'infobox-image inventory-image'}).a['href']
+    release = infoBox.find("th", text = 'Released').parent.td
+    info['released'] = release.text.replace(' (Update)','')
+    info['update'] = release.find('a',text='Update')['href']
+    '''Don't think aka is even used?
+    try:
+        info['aka'] = infoBox.find("td", {'data-attr-param':'aka'}).text
+    except AttributeError:
+        pass'''
+    info['members'] = convertYN(infoBox.find("th", text = 'Members').parent.td.text)
+    info['quest'] = infoBox.find("th", text = 'Quest item').parent.td.text
+    info['tradeable'] = convertYN(infoBox.find("th", text = 'Tradeable').parent.td.text) #Yes No Yes - only when uncharged
+    if info['tradeable']:
+        #find exchange info
+        #exchangeURL, exchange Price, exchange buy limit
+        pass
+    try:
+        info['bankable'] = convertYN(infoBox.find("th", text = 'Bankable').parent.td.text)
+    except AttributeError:
+        info['bankable'] = True
+    '''Again don't think this ever really comes up
+    try:
+        info['stacksinbank'] = convertYN(infoBox.find("th", text = 'Members').parent.td.text)
+    except AttributeError:
+        info['stacksinbank'] = True'''
+    info['equipable'] = convertYN(infoBox.find("th", text = 'Equipable').parent.td.text)
+    info['stackable'] = convertYN(infoBox.find("th", text = 'Stackable').parent.td.text)
+    try:
+        info['edible'] = convertYN(infoBox.find("th", text = 'Edible').parent.td.text)
+    except AttributeError:
+        info['edible'] = False
+    try:
+        info['noteable'] = convertYN(infoBox.find("th", text = 'Noteable').parent.td.text)
+    except AttributeError:
+        info['noteable'] = True
+    info['destroy'] = infoBox.find("th", text = 'Destroy').parent.td.text
+    store = infoBox.find("th", text = 'Store price').parent.td #price currency store
+    info['storePrice'] = parsePrice(store.text.split[0])
+    storeLinks = infoBox.find_all('a')
+    if storeLinks==2:
+        info['storeCurrency'] = storeLinks[0].text
+        info['seller'] = storeLinks[1].text
+    if storeLinks==1:
+        info['storeCurrency'] = 'coins'
+        info['seller'] = storeLinks[0].text
+    try:
+        info['alcheable'] = convertYN(infoBox.find("th", text='Alchable').parent.td.text)
+    except AttributeError:
+        info['alcheable'] = True
+    if info['alcheable']:
+        info['highAlch'] = parsePrice(infoBox.find("th", text = 'High alch').parent.td.text)
+        info['lowAlch'] = parsePrice(infoBox.find("th", text='Low alch').parent.td.text)
+    info['exchangePrice'] =
+    info['buyLimit'] =
+    info['weight'] =
+    info['examine'] =
+    return info
 
 if __name__ == "__main__":
-    parseItemInfo('Dragon_dagger#Poison++')
+    parseItemInfo('Obsidian_cape')

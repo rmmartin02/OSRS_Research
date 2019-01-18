@@ -166,18 +166,18 @@ def parseItemInfo(item):
     info['buyLimit'] = exInfo['limit']
     return info
 
-def storeItemInfo():
+def storeItemInfoTSV():
     items = []
     with open('itemURLs.csv', 'r') as f:
         lines = f.readlines()
         items = [i.split(',')[0] for i in lines]
     start = 0
-    with open('itemsInfo.csv','r') as f:
+    with open('itemsInfo.tsv','r') as f:
         lines = f.readlines()
         if len(lines)>0:
-            name = lines[-1].split(',')[0]
+            name = lines[-1].split('\t')[0]
             start =  items.index(name)+1
-    with open('itemsInfo.csv','a') as f:
+    with open('itemsInfo.tsv','a') as f:
         for i in range(start,len(items)):
             for info in parseVariants(items[i]):
                 #print(info)
@@ -199,9 +199,51 @@ def storeItemInfo():
                         info['weight'],
                         info['categories']]
                 info = [str(i) for i in info]
-                f.write(','.join(info)+'\n')
+                f.write('\t'.join(info)+'\n')
             print('{}/{} ({})'.format(i+1,len(items),(float(i+1)/float(len(items)))*100))
 
+class Item:
+    def __init__(self, name):
+        self.name = name
+
+    def getInfo(self):
+        pass
+
+def storeItemInfoPickle():
+    items = []
+    with open('itemURLs.csv', 'r') as f:
+        lines = f.readlines()
+        items = [i.split(',')[0] for i in lines]
+    start = 0
+    with open('itemsInfo.tsv','r') as f:
+        lines = f.readlines()
+        if len(lines)>0:
+            name = lines[-1].split('\t')[0]
+            start =  items.index(name)+1
+    with open('itemsInfo.tsv','a') as f:
+        for i in range(start,len(items)):
+            for info in parseVariants(items[i]):
+                #print(info)
+                info = [info['name'],
+                        info['released'],
+                        info['update'],
+                        info['members'],
+                        info['questItem'],
+                        info['tradeable'],
+                        info['equipable'],
+                        info['stackable'],
+                        info['noteable'],
+                        info['destroy'],
+                        info['highAlch'],
+                        info['lowAlch'],
+                        info['storePrice'],
+                        info['exchangePrice'],
+                        info['buyLimit'],
+                        info['weight'],
+                        info['categories']]
+                info = [str(i) for i in info]
+                f.write('\t'.join(info)+'\n')
+            print('{}/{} ({})'.format(i+1,len(items),(float(i+1)/float(len(items)))*100))
 
 def getExchangeInfo(item):
     item = item.replace('+','%2B')

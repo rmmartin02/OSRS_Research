@@ -1,0 +1,18 @@
+from selenium import webdriver
+from bs4 import BeautifulSoup
+
+URL = 'https://oldschool.runescape.wiki'
+
+def parseItemInfo(item):
+    request = URL + '/w/' + item
+    browser = webdriver.Chrome()
+    browser.get(request)  # navigate to page behind login
+    r = browser.execute_script("return document.body.innerHTML")  # returns the inner HTML as a string
+    soup = BeautifulSoup(r, features="html.parser")
+    infoBox = soup.find_all('div', {'class': 'infobox-wrapper'})[0]
+    buttons = infoBox.find_all('div', {'class': 'infobox-buttons'})
+    with open('info.html', 'w') as f:
+        f.write(str(infoBox).replace('>', '>\n'))
+
+if __name__ == "__main__":
+    parseItemInfo('Dragon_dagger#Poison++')

@@ -1,278 +1,178 @@
+from selenium import webdriver
 from bs4 import BeautifulSoup
 import requests
 import re
-import copy
+import pickle
 
 URL = 'https://oldschool.runescape.wiki'
-
-def getItems():
-    nextURL = '/w/Category:Grand_Exchange_items'
-    items = []
-    done = False
-    while not done:
-        print(nextURL)
-        r = requests.get(URL+nextURL)
-        soup = BeautifulSoup(r.text,features="html.parser")
-        arr = soup.find_all('li')
-        i = 0
-        while 'Category' not in arr[i].a['href']:
-            items.append((arr[i].a['title'].replace(' ','_'),arr[i].a['href']))
-            i+=1
-        aList = soup.find_all('a')
-        done = True
-        for a in aList:
-            if 'next page' in a.text:
-                done = False
-                nextURL = a['href']
-    with open('itemURLs.csv','w') as f:
-        for item in items:
-            f.write('{},{}\n'.format(item[0],item[1]))
+KEYS = ['name','image','released','update','members','quest','tradeable','equipable',
+        'stackable','edible','noteable','destroy','storeprice','storeCurrency','seller',
+        'alchable','highAlch','lowAlch','exchangePrice','buyLimit','weight','examine']
 
 def convertYN(yn):
-    if 'Yes':
+    if yn == 'Yes' or yn == 'yes':
         return True
     return False
 
-def getItemInfo(item):
+def getVariants(item):
     r = requests.get(URL + '/w/' + item)
     soup = BeautifulSoup(r.text, features="html.parser")
-    infoBox = soup.find_all('div',{'class':'infobox-wrapper'})[0]
+    infoBox = soup.find('div',{'class':'infobox-wrapper'})
     arr = []
-    #if len(infoBox.find_all('div',{'class':'infobox-buttons'}))>0:
-        #variants = infoBox.find_all('div', {'class': 'infobox-buttons'})[0].contents
-        #for v in variants:
-           # arr.append(parseItemInfo(item+v['data-switch-anchor']))
-   # else:
-       # arr.append(parseItemInfo(item))
-    arr.append(parseItemInfo(item))
+    if len(infoBox.find_all('div',{'class':'infobox-buttons'}))>0:
+        variants = infoBox.find('div', {'class': 'infobox-buttons'}).contents
+        for v in variants:
+            arr.append(item+v['data-switch-anchor'])
+    else:
+        arr.append(item)
     return arr
 
 def parsePrice(priceString):
-    if 'Not sold' in priceString:
-        return -1
-    if priceString == '-':
-        return -1
-    return int(re.sub("\D","",priceString))
-
-def parseVariants(item):
-    print(item)
-    r = requests.get(URL + '/w/' + item)
-    soup = BeautifulSoup(r.text, features="html.parser")
-    infoBox = soup.find_all('div', {'class': 'infobox-wrapper'})[0]
-    buttons = infoBox.find_all('div', {'class': 'infobox-buttons'})
-    if len(buttons)>0:
-        hiddenInfo = infoBox.find_all('div', {'class': 'infobox-switch-resources hidden'})[0]
-        #print(hiddenInfo)
-        with open('info.html','w') as f:
-            f.write(str(hiddenInfo).replace('>','>\n'))
-        names = []
-        try:
-            names = [n.text.replace(' ','_') for n in hiddenInfo.find_all('span',{'data-attr-param':'name'})[0].contents]
-            #print(names)
-        except:
-            pass
-        releases = []
-        updates = []
-        try:
-            dates = hiddenInfo.find_all('span',{'data-attr-param':'release'})[0]
-            releases = [n.text.replace(' (Update)', '') for n in dates.contents[1:]]
-            updates = [n['href'] for n in dates.find_all('a',text='Update')]
-            #print(releases)
-            #print(updates)
-        except IndexError:
-            pass
-        storePrices = []
-        try:
-            storePrices = [parsePrice(n.text) for n in hiddenInfo.find_all('span',{'data-attr-param':'store'})[0].contents[1:]]
-            #print(storePrices)
-        except IndexError:
-            pass
-        exchange = hiddenInfo.find_all('span',{'data-attr-param':'exchange'})[0]
-        exURLs = {}
-        for n in exchange.find_all('a'):
-            exURLs[n['title'].split(':')[1].replace(' ','_')] = n['href'].split(':')[1]
-        #print(exURLs)
-
-        defInfo = parseItemInfo([key for key in exURLs][0])
-        infoDicts = []
-        #only incldue items in the GE
-        for it in exURLs:
-            #stil working on this
-            info = copy.deepcopy(defInfo)
-            i = 10000000000
-            try:
-                i = names.index(it)
-                info['name'] = names[i]
-            except:
-                pass
-            if len(releases)>i:
-                info['released'] = releases[i]
-            if len(updates) > i:
-                info['update'] = updates[i]
-            if len(storePrices) > i:
-                info['storePrice'] = storePrices[i]
-            exInfo = getExchangeInfo(exURLs[it])
-            info['highAlch'] = exInfo['hialch']
-            info['lowAlch'] = exInfo['lowalch']
-            info['exchangePrice'] = exInfo['price']
-            info['buyLimit'] = exInfo['limit']
-            infoDicts.append(info)
-        return infoDicts
-    else:
-        return [parseItemInfo(item)]
-
-
-def parseItemInfo(item):
-    r = requests.get(URL + '/w/' + item)
-    soup = BeautifulSoup(r.text, features="html.parser")
-    infoBox = soup.find_all('div',{'class':'infobox-wrapper'})[0]
-    info = {}
-    info['name'] =  item
-    info['released'] = infoBox.find_all("th", text="Released")[0].parent.td.text[:]
-    info['update'] = 'N/A'
-    if 'Update' in infoBox.find_all("th", text="Released")[0].parent.td.text[8:]:
-        info['released'] = info['released'].replace(' (Update)','')
-        info['update'] = infoBox.find_all("th", text="Released")[0].parent.td.find_all('a')[-1]['href']
-
-    info['members'] = convertYN(infoBox.find_all("th", text="Members")[0].parent.td.text)
-    info['questItem'] = convertYN(infoBox.find_all("th", text="Quest item")[0].parent.td.text[:])
-    info['tradeable'] = convertYN(infoBox.find_all("th", text="Tradeable")[0].parent.td.text[:])
-    info['equipable'] = convertYN(infoBox.find_all("th", text="Equipable")[0].parent.td.text[:])
-    info['stackable'] = convertYN(infoBox.find_all("th", text="Stackable")[0].parent.td.text[:])
-    if len(infoBox.find_all("th", text="Noteable"))==0:
-        info['noteable'] = 'N/A'
-    else:
-        info['noteable'] = convertYN(infoBox.find_all("th", text="Noteable")[0].parent.td.text[:])
-    info['destroy'] = infoBox.find_all("th", text="Destroy")[0].parent.td.text[:]
     try:
-        info['highAlch'] = int(re.sub("\D","",infoBox.find_all("th", text="High alch")[0].parent.td.text))
-        info['lowAlch'] = int(re.sub("\D","",infoBox.find_all("th", text="Low alch")[0].parent.td.text))
-    except IndexError:
-        info['highAlch'] = -1
-        info['lowAlch'] = -1
-    try:
-        info['storePrice'] = int(re.sub("\D","",infoBox.find_all("th", text="Store price")[0].parent.td.text))
+        return int(re.sub("\D","",priceString))
     except ValueError:
-        info['storePrice'] = -1
-    try:
-        info['weight'] = float(infoBox.find_all("th", text="Weight")[0].parent.td.text[:-3])
-    except ValueError:
-        info['weight'] = 0
-    info['categories'] = [c.text for c in soup.find(id='catlinks').find_all('a') if 'href' in c.attrs and 'Category' in c['href']]
-    exInfo = getExchangeInfo(item)
-    info['highAlch'] = exInfo['hialch']
-    info['lowAlch'] = exInfo['lowalch']
-    info['exchangePrice'] = exInfo['price']
-    info['buyLimit'] = exInfo['limit']
-    return info
-
-def storeItemInfoTSV():
-    items = []
-    with open('itemURLs.csv', 'r') as f:
-        lines = f.readlines()
-        items = [i.split(',')[0] for i in lines]
-    start = 0
-    with open('itemsInfo.tsv','r') as f:
-        lines = f.readlines()
-        if len(lines)>0:
-            name = lines[-1].split('\t')[0]
-            start =  items.index(name)+1
-    with open('itemsInfo.tsv','a') as f:
-        for i in range(start,len(items)):
-            for info in parseVariants(items[i]):
-                #print(info)
-                info = [info['name'],
-                        info['released'],
-                        info['update'],
-                        info['members'],
-                        info['questItem'],
-                        info['tradeable'],
-                        info['equipable'],
-                        info['stackable'],
-                        info['noteable'],
-                        info['destroy'],
-                        info['highAlch'],
-                        info['lowAlch'],
-                        info['storePrice'],
-                        info['exchangePrice'],
-                        info['buyLimit'],
-                        info['weight'],
-                        info['categories']]
-                info = [str(i) for i in info]
-                f.write('\t'.join(info)+'\n')
-            print('{}/{} ({})'.format(i+1,len(items),(float(i+1)/float(len(items)))*100))
-
-class Item:
-    def __init__(self, name):
-        self.name = name
-
-    def getInfo(self):
-        pass
-
-def storeItemInfoPickle():
-    items = []
-    with open('itemURLs.csv', 'r') as f:
-        lines = f.readlines()
-        items = [i.split(',')[0] for i in lines]
-    start = 0
-    with open('itemsInfo.tsv','r') as f:
-        lines = f.readlines()
-        if len(lines)>0:
-            name = lines[-1].split('\t')[0]
-            start =  items.index(name)+1
-    with open('itemsInfo.tsv','a') as f:
-        for i in range(start,len(items)):
-            for info in parseVariants(items[i]):
-                #print(info)
-                info = [info['name'],
-                        info['released'],
-                        info['update'],
-                        info['members'],
-                        info['questItem'],
-                        info['tradeable'],
-                        info['equipable'],
-                        info['stackable'],
-                        info['noteable'],
-                        info['destroy'],
-                        info['highAlch'],
-                        info['lowAlch'],
-                        info['storePrice'],
-                        info['exchangePrice'],
-                        info['buyLimit'],
-                        info['weight'],
-                        info['categories']]
-                info = [str(i) for i in info]
-                f.write('\t'.join(info)+'\n')
-            print('{}/{} ({})'.format(i+1,len(items),(float(i+1)/float(len(items)))*100))
+        return -1
 
 def getExchangeInfo(item):
     item = item.replace('+','%2B')
     r = requests.get('{}/w/Module:Exchange/{}?action=raw'.format(URL, item))
     info = {}
-    keys = ['price', 'value', 'limit', 'hialch', 'lowalch']
+    keys = ['price', 'value', 'limit', 'hialch', 'lowalch','examine']
     for k in keys:
         info[k] = -1
     if len(r.text) == 0:
         return info
-    arr = r.text.split('\n')
-    #print(arr)
+    arr = [a.split('=') for a in r.text.split('\n')[1:-1]]
     for a in arr:
         for k in keys:
-            if k in a and 'examine' not in a:
+            if k in a[0]:
                 try:
-                    info[k] = a.split('=')[1]
+                    if k != 'examine':
+                        info[k] = int(re.sub("\D","",a[1]))
+                    else:
+                        info[k] = a[1][2:-2]
                 except ValueError:
                     info[k] = -1
-    #print(info)
     return info
 
-def getExchangePrices(item):
-    r = requests.get('{}/w/Module:Exchange/{}/Data?action=raw'.format(URL,item))
-    arr = r.text[8:-1].split()
-    arr = [a.replace('"','').replace("'","").replace(',','').split(':') for a in arr]
-    times = [int(t[0]) for t in arr]
-    prices = [int(p[1]) for p in arr]
-    return times,prices
+
+def parseItemInfo(item, browser):
+    # https://oldschool.runescape.wiki/w/Template:Infobox_Item/doc
+    request = URL + '/w/' + item
+    browser.get(request)  # navigate to page behind login
+    r = browser.execute_script("return document.body.innerHTML")  # returns the inner HTML as a string
+    soup = BeautifulSoup(r, features="html.parser")
+    infoBox = soup.find('div', {'class': 'infobox-wrapper'})
+    with open('info.html', 'w') as f:
+        f.write(str(infoBox).replace('>', '>\n'))
+    info = {}
+    for key in KEYS:
+        info[key] = 'N/A'
+    info['name'] = infoBox.find('th',{'class':'infobox-header'}).text.replace(' ','_')
+    info['image'] = infoBox.find('td',{'class':'infobox-image inventory-image'}).a['href']
+    release = infoBox.find("th", text = 'Released').parent.td
+    info['released'] = release.text.replace(' (Update)','')
+    info['update'] = release.find('a',text='Update')['href']
+    '''Don't think aka is even used?
+    try:
+        info['aka'] = infoBox.find("td", {'data-attr-param':'aka'}).text
+    except AttributeError:
+        pass'''
+    info['members'] = convertYN(infoBox.find("th", text = 'Members').parent.td.text)
+    info['quest'] = infoBox.find("th", text = 'Quest item').parent.td.text
+    info['tradeable'] = convertYN(infoBox.find("th", text = 'Tradeable').parent.td.text) #Yes No Yes - only when uncharged
+    if info['tradeable']:
+        exInfo = getExchangeInfo(info['name'])
+        info['examine'] = exInfo['examine']
+        info['exchangePrice'] = exInfo['price']
+        info['buyLimit'] = exInfo['limit']
+    try:
+        info['bankable'] = convertYN(infoBox.find("th", text = 'Bankable').parent.td.text)
+    except AttributeError:
+        info['bankable'] = True
+    '''Again don't think this ever really comes up
+    try:
+        info['stacksinbank'] = convertYN(infoBox.find("th", text = 'Members').parent.td.text)
+    except AttributeError:
+        info['stacksinbank'] = True'''
+    info['equipable'] = convertYN(infoBox.find("th", text = 'Equipable').parent.td.text)
+    info['stackable'] = convertYN(infoBox.find("th", text = 'Stackable').parent.td.text)
+    try:
+        info['edible'] = convertYN(infoBox.find("th", text = 'Edible').parent.td.text)
+    except AttributeError:
+        info['edible'] = False
+    try:
+        info['noteable'] = convertYN(infoBox.find("th", text = 'Noteable').parent.td.text)
+    except AttributeError:
+        info['noteable'] = True
+    info['destroy'] = infoBox.find("th", text = 'Destroy').parent.td.text
+    store = infoBox.find("th", text = 'Store price').parent.td #price currency store
+    info['storePrice'] = parsePrice(store.text.split()[0])
+    storeLinks = infoBox.find_all('a')
+    if storeLinks==2:
+        info['storeCurrency'] = storeLinks[0].text
+        info['seller'] = storeLinks[1].text
+    if storeLinks==1:
+        info['storeCurrency'] = 'coins'
+        info['seller'] = storeLinks[0].text
+    try:
+        info['alchable'] = convertYN(infoBox.find("th", text='Alchemy').parent.td.text)
+    except AttributeError:
+        info['alchable'] = True
+    if info['alchable']:
+        info['highAlch'] = parsePrice(infoBox.find("th", text = 'High alch').parent.td.text)
+        info['lowAlch'] = parsePrice(infoBox.find("th", text='Low alch').parent.td.text)
+    try:
+        info['weight'] = float(infoBox.find("th", text = 'Weight').parent.td.text.replace('kg',''))
+    except ValueError:
+        pass
+    return info
+
+def storeItemInfoTSV():
+    with open('itemURLs.csv', 'r') as f:
+        lines = f.readlines()
+        items = [i.split(',')[0] for i in lines]
+    start = 0
+    try:
+        with open('itemsInfo.tsv','r') as f:
+            lines = f.readlines()
+            if len(lines)>0:
+                name = lines[-1].split('\t')[0]
+                start =  items.index(name)+1
+    except FileNotFoundError:
+        pass
+    browser = webdriver.Chrome('./chromedriver')
+    with open('itemsInfo.tsv','a') as f:
+        for i in range(start,len(items)):
+            variants = getVariants(items[i])
+            if len(variants) == 1:
+                info = parseItemInfo(variants[0], browser)
+                for key in KEYS:
+                    f.write(str(info[key]) + '\t')
+                f.write('\n')
+            else:
+                for v in getVariants(items[i]):
+                    browser = webdriver.Chrome('./chromedriver')
+                    info = parseItemInfo(v,browser)
+                    for key in KEYS:
+                        f.write(str(info[key])+'\t')
+                    f.write('\n')
+            print('{}/{} ({})'.format(i+1,len(items),(float(i+1)/float(len(items)))*100))
+
+def TSVtoPickle():
+    with open('itemsInfo.tsv', 'r') as f:
+        lines = f.readlines()
+    items = [a.split('\t') for a in lines]
+    arr = []
+    for item in items:
+        dic = {}
+        i = 0
+        for k in KEYS:
+            dic[k] = item[i]
+            i+=1
+        arr.append(dic)
+    with open('itemInfo.pickle', 'wb') as f:
+        pickle.dump(arr,f)
 
 if __name__ == "__main__":
-    storeItemInfo()
+    TSVtoPickle()

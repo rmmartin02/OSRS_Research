@@ -1,8 +1,10 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
+from pprint import pprint
 import requests
 import re
 import pickle
+import ast
 
 URL = 'https://oldschool.runescape.wiki'
 KEYS = ['name','image','released','update','members','quest','tradeable','equipable',
@@ -174,5 +176,47 @@ def TSVtoPickle():
     with open('itemInfo.pickle', 'wb') as f:
         pickle.dump(arr,f)
 
+def getHistoricalPrices(item):
+    item = item.replace('+', '%2B').replace(' ','_')
+    r = requests.get('{}/w/Module:Exchange/{}/Data?action=raw'.format(URL, item))
+    if r.status_code!=200:
+        return None
+    p = ast.literal_eval(r.text.replace('return {','[').replace('}',']').replace('\n',''))
+    for i in range(len(p)):
+        a = p[i].split(':')
+        if len(a)==2:
+            p[i] = (int(a[0]),int(a[1]),-1)
+        elif len(a)==3:
+            p[i] = (int(a[0]),int(a[1]),float(a[2]))
+        else:
+            print('Parsing error')
+    #pprint(p)
+    return p
+
+def storeItemPricesPickle():
+    with open('itemInfo.pickle', 'rb') as f:
+        itemInfo = pickle.load(f)
+
+    info = {}
+    i = 0
+    for item in itemInfo:
+        prices = getHistoricalPrices(item['name'])
+        if prices!=None:
+            info[item['name']] = prices
+        print('{}/{} ({})'.format(i + 1, len(itemInfo), (float(i + 1) / float(len(itemInfo))) * 100))
+        i+=1
+
+    with open('itemPrices.pickle', 'wb') as f:
+        pickle.dump(info,f)
+
+def loadItemInfo():
+    with open('itemInfo.pickle','rb') as f:
+        return pickle.load(f)
+
+def loadItemPrices():
+    with open('itemPrices.pickle','rb') as f:
+        return pickle.load(f)
+
+
 if __name__ == "__main__":
-    TSVtoPickle()
+    storeItemPricesPickle()

@@ -130,6 +130,14 @@ def parseItemInfo(item, browser):
         pass
     return info
 
+def storeItemCategoriesPickle():
+    with open('itemURLs.csv', 'r') as f:
+        lines = f.readlines()
+        items = [i.split(',')[0] for i in lines]
+    for item in items:
+        r = requests.get(base)
+
+
 def storeItemInfoTSV():
     with open('itemURLs.csv', 'r') as f:
         lines = f.readlines()

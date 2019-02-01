@@ -134,8 +134,16 @@ def storeItemCategoriesPickle():
     with open('itemURLs.csv', 'r') as f:
         lines = f.readlines()
         items = [i.split(',')[0] for i in lines]
+    itemCats = {}
+    i = 0
     for item in items:
-        r = requests.get(base)
+        r = requests.get(URL + '/w/' + item)
+        soup = BeautifulSoup(r.text, features="html.parser")
+        itemCats[item] = [c.text for c in soup.find('div',id='catlinks').find_all('a') if 'href' in c.attrs and 'Category' in c['href']]
+        i += 1
+        print('{}/{} ({})'.format(i + 1, len(items), (float(i + 1) / float(len(items))) * 100))
+    with open('itemCats.pickle', 'wb') as f:
+        pickle.dump(itemCats,f)
 
 
 def storeItemInfoTSV():
@@ -227,4 +235,4 @@ def loadItemPrices():
 
 
 if __name__ == "__main__":
-    storeItemPricesPickle()
+    storeItemCategoriesPickle()

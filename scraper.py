@@ -5,6 +5,8 @@ import requests
 import re
 import pickle
 import ast
+import datetime
+from time import strptime
 
 URL = 'https://oldschool.runescape.wiki'
 KEYS = ['name','image','released','update','members','quest','tradeable','equipable',
@@ -130,8 +132,37 @@ def parseItemInfo(item, browser):
         pass
     return info
 
+def scrapeUpdatesPickle():
+    r = requests.get('https://oldschool.runescape.wiki/w/Game_updates')
+    soup = BeautifulSoup(r.text, features="html.parser")
+
+    geUpdate = datetime.date(2015,2,27)
+
+    updates = {}
+
+    for a in soup.find_all('a'):
+        if a.has_attr('href') and '/w/Update:' in a['href']:
+            updateRequest = requests.get(URL + a['href'])
+            upSoup = BeautifulSoup(updateRequest.text, features="html.parser")
+            dateList = upSoup.find('div',{"class":"official update"}).find_all('a')[-2:]
+            year = int(dateList[1].text)
+            month = datetime.datetime.strptime(dateList[0].text.split()[1], '%B').month
+            day = int(dateList[0].text.split()[0])
+            date = datetime.date(year,month,day)
+            if date>geUpdate:
+                text = []
+                for p in upSoup.find('div',{"class":"boldlinks"}).find_all('p'):
+                    text = text + (p.text.split())
+                print(a['href'].replace('/w/Update:', ''),date,text)
+                updates[a['href'].replace('/w/Update:', '')] = {'date':date,'text':text}
+            elif date<geUpdate:
+                break
+
+    with open('Data/updates.pickle', 'wb') as f:
+        pickle.dump(updates,f)
+
 def storeItemCategoriesPickle():
-    with open('itemURLs.csv', 'r') as f:
+    with open('Data/itemURLs.csv', 'r') as f:
         lines = f.readlines()
         items = [i.split(',')[0] for i in lines]
     itemCats = {}
@@ -142,17 +173,17 @@ def storeItemCategoriesPickle():
         itemCats[item] = [c.text for c in soup.find('div',id='catlinks').find_all('a') if 'href' in c.attrs and 'Category' in c['href']]
         i += 1
         print('{}/{} ({})'.format(i + 1, len(items), (float(i + 1) / float(len(items))) * 100))
-    with open('itemCats.pickle', 'wb') as f:
+    with open('Data/itemCats.pickle', 'wb') as f:
         pickle.dump(itemCats,f)
 
 
 def storeItemInfoTSV():
-    with open('itemURLs.csv', 'r') as f:
+    with open('Data/itemURLs.csv', 'r') as f:
         lines = f.readlines()
         items = [i.split(',')[0] for i in lines]
     start = 0
     try:
-        with open('itemsInfo.tsv','r') as f:
+        with open('Data/itemsInfo.tsv','r') as f:
             lines = f.readlines()
             if len(lines)>0:
                 name = lines[-1].split('\t')[0]
@@ -160,7 +191,7 @@ def storeItemInfoTSV():
     except FileNotFoundError:
         pass
     browser = webdriver.Chrome('./chromedriver')
-    with open('itemsInfo.tsv','a') as f:
+    with open('Data/itemsInfo.tsv','a') as f:
         for i in range(start,len(items)):
             variants = getVariants(items[i])
             if len(variants) == 1:
@@ -177,8 +208,9 @@ def storeItemInfoTSV():
                     f.write('\n')
             print('{}/{} ({})'.format(i+1,len(items),(float(i+1)/float(len(items)))*100))
 
+
 def TSVtoPickle():
-    with open('itemsInfo.tsv', 'r') as f:
+    with open('Data/itemsInfo.tsv', 'r') as f:
         lines = f.readlines()
     items = [a.split('\t') for a in lines]
     arr = []
@@ -189,7 +221,7 @@ def TSVtoPickle():
             dic[k] = item[i]
             i+=1
         arr.append(dic)
-    with open('itemInfo.pickle', 'wb') as f:
+    with open('Data/itemInfo.pickle', 'wb') as f:
         pickle.dump(arr,f)
 
 def getHistoricalPrices(item):
@@ -210,7 +242,7 @@ def getHistoricalPrices(item):
     return p
 
 def storeItemPricesPickle():
-    with open('itemInfo.pickle', 'rb') as f:
+    with open('Data/itemInfo.pickle', 'rb') as f:
         itemInfo = pickle.load(f)
 
     info = {}
@@ -222,15 +254,15 @@ def storeItemPricesPickle():
         print('{}/{} ({})'.format(i + 1, len(itemInfo), (float(i + 1) / float(len(itemInfo))) * 100))
         i+=1
 
-    with open('itemPrices.pickle', 'wb') as f:
+    with open('Data/itemPrices.pickle', 'wb') as f:
         pickle.dump(info,f)
 
 def loadItemInfo():
-    with open('itemInfo.pickle','rb') as f:
+    with open('Data/itemInfo.pickle','rb') as f:
         return pickle.load(f)
 
 def loadItemPrices():
-    with open('itemPrices.pickle','rb') as f:
+    with open('Data/itemPrices.pickle','rb') as f:
         return pickle.load(f)
 
 

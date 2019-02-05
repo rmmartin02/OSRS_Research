@@ -254,7 +254,7 @@ def storeItemPricesPickle():
         print('{}/{} ({})'.format(i + 1, len(itemInfo), (float(i + 1) / float(len(itemInfo))) * 100))
         i+=1
 
-    with open('Data/itemPrices.pickle', 'wb') as f:
+    with open('Data/itemPricesOriginal.pickle', 'wb') as f:
         pickle.dump(info,f)
 
 def loadItemInfo():
@@ -267,4 +267,4 @@ def loadItemPrices():
 
 
 if __name__ == "__main__":
-    storeItemCategoriesPickle()
+    storeItemPricesPickle()

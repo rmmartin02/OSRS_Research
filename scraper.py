@@ -162,9 +162,9 @@ def scrapeUpdatesPickle():
         pickle.dump(updates,f)
 
 def storeItemCategoriesPickle():
-    with open('Data/itemURLs.csv', 'r') as f:
-        lines = f.readlines()
-        items = [i.split(',')[0] for i in lines]
+    with open('Data/itemInfo.pickle', 'rb') as f:
+        items = list(pickle.load(f).keys())
+    print(len(items))
     itemCats = {}
     i = 0
     for item in items:
@@ -267,4 +267,4 @@ def loadItemPrices():
 
 
 if __name__ == "__main__":
-    TSVtoPickle()
+    storeItemCategoriesPickle()

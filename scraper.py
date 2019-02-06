@@ -213,14 +213,14 @@ def TSVtoPickle():
     with open('Data/itemsInfo.tsv', 'r') as f:
         lines = f.readlines()
     items = [a.split('\t') for a in lines]
-    arr = []
+    arr = {}
     for item in items:
         dic = {}
         i = 0
         for k in KEYS:
             dic[k] = item[i]
             i+=1
-        arr.append(dic)
+        arr[dic['name']] = dic
     with open('Data/itemInfo.pickle', 'wb') as f:
         pickle.dump(arr,f)
 
@@ -267,4 +267,4 @@ def loadItemPrices():
 
 
 if __name__ == "__main__":
-    storeItemPricesPickle()
+    TSVtoPickle()

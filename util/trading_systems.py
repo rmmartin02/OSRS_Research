@@ -1,10 +1,10 @@
-def perfectProfit(x_arr,thresh,y_arr,data,buyLimit,budget):
+def perfectProfit(changes,thresh,y_arr,data,buyLimit,budget):
     init = budget
     buyLimit = int(buyLimit)
     invent = 0
     profits = []
-    for i in range(len(x_arr)):
-        x = x_arr[i][-1]
+    for i in range(len(changes)):
+        x = changes[i]
         y_pred = y_arr[i]
         if y_pred-x>thresh:
             buy = budget//data[i]
@@ -48,6 +48,25 @@ def modelProfit(x_arr,thresh,model,data,buyLimit,budget):
             invent += buy
             budget -= buy * data[i]
         if y_pred<x:
+            budget += invent * data[i]
+            invent = 0
+        profits.append(((budget + invent * data[i]) - init) / init)
+    return profits
+
+def persistanceProfit(changes,thresh,y_arr,data,buyLimit,budget):
+    init = budget
+    buyLimit = int(buyLimit)
+    invent = 0
+    profits = []
+    for i in range(1,len(changes)):
+        diff = changes[i]-changes[i-1]
+        if diff>thresh:
+            buy = budget//data[i]
+            if buy>buyLimit:
+                buy = buyLimit
+            invent += buy
+            budget -= buy * data[i]
+        if diff<0:
             budget += invent * data[i]
             invent = 0
         profits.append(((budget + invent * data[i]) - init) / init)

@@ -1,40 +1,50 @@
 import pickle
 import re
 import os
+import numpy as np
+
+import os 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path = '/'.join(dir_path.split('/')[:-1])
 
 itemInfo = {}
-with open(os.curdir+'/Data/itemInfo.pickle','rb') as f:
+with open(dir_path+'/Data/itemInfo.pickle','rb') as f:
     itemInfo = pickle.load(f)
 
 itemPrices = {}
-with open(os.curdir+'/Data/itemPrices.pickle','rb') as f:
+with open(dir_path+'/Data/itemPrices.pickle','rb') as f:
     itemPrices = pickle.load(f)
 
 itemCats = {}
-with open(os.curdir+'/Data/itemCats.pickle','rb') as f:
+with open(dir_path+'/Data/itemCats.pickle','rb') as f:
     itemCats = pickle.load(f)
 
 viableItems = []
-with open(os.curdir+'/Data/viableItems.pickle','rb') as f:
+with open(dir_path+'/Data/viableItems.pickle','rb') as f:
     viableItems = pickle.load(f)
 
-def getItemInfo(item):
+def getInfo(item):
     return itemInfo[item]
 
-def getItemPrices(item):
+def getPrices(item):
     return [a[1] for a in itemPrices[item]]
 
 def getPriceChanges(item):
-    p = getItemPrices(item)
+    p = getPrices(item)
     return [p[i+1]-p[i] for i in range(len(p)-1)]
 
-def getItemDates(item):
+def movingAverage(item, n=7) :
+    ret = np.cumsum(getPrices(item), dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
+def getDates(item):
     return [a[0] for a in itemPrices[item]]
 
-def getItemQuants(item):
+def getQuants(item):
     return [a[2] for a in itemPrices[item] if a[2] > 0]
 
-def getItemCats(item):
+def getCats(item):
     return itemCats[item]
 
 def similarity(item1,item2):

@@ -1,21 +1,19 @@
-def perfectProfit(changes,thresh,y_arr,data,buyLimit,budget):
+def perfectProfit(changes,data,buyLimit,budget):
     init = budget
     buyLimit = int(buyLimit)
     invent = 0
     profits = []
-    for i in range(len(changes)):
-        x = changes[i]
-        y_pred = y_arr[i]
-        if y_pred-x>thresh:
-            buy = budget//data[i]
+    for i in range(1,len(changes)):
+        if changes[i]==1:
+            buy = budget//data[i-1]
             if buy>buyLimit:
                 buy = buyLimit
             invent += buy
-            budget -= buy * data[i]
-        if y_pred<x:
-            budget += invent * data[i]
+            budget -= buy * data[i-1]
+        else:
+            budget += invent * data[i-1]
             invent = 0
-        profits.append(((budget + invent * data[i]) - init) / init)
+        profits.append(((budget + (invent*data[i-1]))-init)/init)
     return profits
 
 def buyAndHold(data,buyLimit,budget):
@@ -33,41 +31,40 @@ def buyAndHold(data,buyLimit,budget):
     return profits
 
 
-def modelProfit(x_arr,thresh,model,data,buyLimit,budget):
+def modelProfit(thresh,y_pred,data,buyLimit,budget):
     init = budget
     buyLimit = int(buyLimit)
     invent = 0
     profits = []
-    for i in range(len(x_arr)):
-        x = x_arr[i][-1]
-        y_pred = model.predict(x_arr[i].reshape(1,-1))[0][0]
-        if y_pred-x>thresh:
+    for i in range(len(y_pred)):
+        y = y_pred[i]
+        if y-0.5>thresh:
             buy = budget//data[i]
             if buy>buyLimit:
                 buy = buyLimit
             invent += buy
             budget -= buy * data[i]
-        if y_pred<x:
+        if y<0.5:
             budget += invent * data[i]
             invent = 0
         profits.append(((budget + invent * data[i]) - init) / init)
     return profits
 
-def persistanceProfit(changes,thresh,y_arr,data,buyLimit,budget):
+def persistanceProfit(changes,data,buyLimit,budget):
     init = budget
     buyLimit = int(buyLimit)
     invent = 0
     profits = []
     for i in range(1,len(changes)):
-        diff = changes[i]-changes[i-1]
-        if diff>thresh:
+        if changes[i-1]==1:
             buy = budget//data[i]
             if buy>buyLimit:
                 buy = buyLimit
             invent += buy
             budget -= buy * data[i]
-        if diff<0:
+        else:
             budget += invent * data[i]
             invent = 0
         profits.append(((budget + invent * data[i]) - init) / init)
+    profits.append(((budget + invent * data[i]) - init) / init)
     return profits

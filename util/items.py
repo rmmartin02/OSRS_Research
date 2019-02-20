@@ -58,10 +58,11 @@ def getSimilarItems(item1,n=5):
     sim = [0]*n
     items = [None]*n
     for item2 in itemCats:
-        m = min(sim)
-        s = similarity(item1,item2)
-        if s>m:
-            idx = sim.index(m)
-            sim[idx] = s
-            items[idx] = item2
+        if item1!=item2:
+            m = min(sim)
+            s = similarity(item1,item2)
+            if s>m:
+                idx = sim.index(m)
+                sim[idx] = s
+                items[idx] = item2
     return [(items[i],sim[i]) for i in range(n)]

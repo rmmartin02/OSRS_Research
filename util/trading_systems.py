@@ -1,19 +1,19 @@
-def perfectProfit(changes,data,buyLimit,budget):
+def perfectProfit(data,buyLimit,budget):
     init = budget
     buyLimit = int(buyLimit)
     invent = 0
     profits = []
-    for i in range(1,len(changes)):
-        if changes[i]==1:
-            buy = budget//data[i-1]
+    for i in range(len(data)-1):
+        if data[i+1]>data[i]:
+            buy = budget//data[i]
             if buy>buyLimit:
                 buy = buyLimit
             invent += buy
-            budget -= buy * data[i-1]
+            budget -= buy * data[i]
         else:
-            budget += invent * data[i-1]
+            budget += invent * data[i]
             invent = 0
-        profits.append(((budget + (invent*data[i-1]))-init)/init)
+        profits.append(((budget + invent * data[i]) - init) / init)
     return profits
 
 def buyAndHold(data,buyLimit,budget):
@@ -50,13 +50,13 @@ def modelProfit(thresh,y_pred,data,buyLimit,budget):
         profits.append(((budget + invent * data[i]) - init) / init)
     return profits
 
-def persistanceProfit(changes,data,buyLimit,budget):
+def persistanceProfit(data,buyLimit,budget):
     init = budget
     buyLimit = int(buyLimit)
     invent = 0
     profits = []
-    for i in range(1,len(changes)):
-        if changes[i-1]==1:
+    for i in range(1,len(data)):
+        if data[i]>data[i-1]:
             buy = budget//data[i]
             if buy>buyLimit:
                 buy = buyLimit
@@ -66,5 +66,22 @@ def persistanceProfit(changes,data,buyLimit,budget):
             budget += invent * data[i]
             invent = 0
         profits.append(((budget + invent * data[i]) - init) / init)
-    profits.append(((budget + invent * data[i]) - init) / init)
+    return profits
+
+def crossOverProfit(ind, sig, data,buyLimit,budget):
+    init = budget
+    buyLimit = int(buyLimit)
+    invent = 0
+    profits = []
+    for i in range(-1 * len(sig) + 1, -1, 1):
+        if ind[i - 1] > sig[i - 1] and ind[i] < sig[i]:
+            budget += invent * data[i]
+            invent = 0
+        if ind[i - 1] < sig[i - 1] and ind[i] > sig[i]:
+            buy = budget // data[i]
+            if buy > buyLimit:
+                buy = buyLimit
+            invent += buy
+            budget -= buy * data[i]
+        profits.append(((budget + invent * data[i]) - init) / init)
     return profits

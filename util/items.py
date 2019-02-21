@@ -33,21 +33,19 @@ def getPriceChanges(item):
     p = getPrices(item)
     return [p[i+1]-p[i] for i in range(len(p)-1)]
 
-def sma(item, n=7):
-    ret = np.cumsum(getPrices(item), dtype=float)
+def sma(prices, n=7):
+    ret = np.cumsum(prices, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
-def ema(item, n=14):
+def ema(prices, n=14):
     s = 2/(n+1)
-    prices = getPrices(item)
     arr = [prices[0]]
     for i in range(1,len(prices)):
         arr.append((prices[i]*s)+(arr[i-1]*(1-s)))
     return arr[n-1:]
 
-def stochOscil(item,n=14,k=3):
-    prices = getPrices(item)
+def stochOscil(prices,n=14,k=3):
     kFast = []
     for i in range(n,len(prices)):
         sub = prices[i-n:i]
@@ -62,8 +60,7 @@ def stochOscil(item,n=14,k=3):
         D.append(np.mean(kFast[i-k:i]))
     return kFast,D
 
-def momentum(item,n=10):
-    prices = getPrices(item)
+def momentum(prices,n=10):
     mom = []
     for i in range(n,len(prices)):
         mom.append(prices[i]-prices[i-n])
@@ -72,9 +69,9 @@ def momentum(item,n=10):
         momMA.append(np.mean(mom[i-n:i]))
     return mom, momMA
 
-def macd(item,nS=12,nL=26,nSign=9):
-    s = ema(item, n=nS)
-    l = ema(item, n=nL)
+def macd(prices,nS=12,nL=26,nSign=9):
+    s = ema(prices, n=nS)
+    l = ema(prices, n=nL)
     m = []
     for i in range(-1*len(l),0):
         m.append(s[i]-l[i])

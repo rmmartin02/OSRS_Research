@@ -18,22 +18,10 @@ from pandas_datareader import data
 import pandas as pd
 
 if __name__ == "__main__":
-    tickers = ['AAPL', 'MSFT', '^GSPC']
 
-    start_date = '2010-01-01'
-    end_date = '2016-12-31'
+    item = "Lassar_teleport-"
 
-    panel_data = data.DataReader('INPX', 'yahoo', start_date, end_date)
-
-    close = list(panel_data['Close'])
-    plt.plot(close)
-    plt.show()
-
-    p = close
-
-    #item = 'Yew_logs'
-
-    #p = items.getPrices(item)
+    p = items.getPrices(item)
     s3 = items.sma(p, n=3)
     s12 = items.sma(p, n=12)
     e = items.ema(p, n=10)
@@ -65,8 +53,7 @@ if __name__ == "__main__":
     plt.xlim(0, 90)
     plt.show(m)
 
-    #bl = int(items.getInfo()['buyLimit'])
-    bl = 100
+    bl = int(items.getInfo(item)['buyLimit'])
     budget = bl * max(p) + 1
     
     stcOscProf = ts.crossOverProfit(kFast,D,p,bl,budget)

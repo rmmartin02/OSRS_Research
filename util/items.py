@@ -26,6 +26,11 @@ with open(dir_path+'/Data/viableItems.pickle','rb') as f:
 def getInfo(item):
     return itemInfo[item]
 
+def getViableItems(
+
+):
+    return viableItems
+
 def getPrices(item):
     return [a[1] for a in itemPrices[item]]
 

@@ -5,22 +5,22 @@ import numpy as np
 
 import os 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path = '/'.join(dir_path.split('/')[:-1])
+dir_path = (os.sep).join(dir_path.split(os.sep)[:-1])
 
 itemInfo = {}
-with open(dir_path+'/Data/itemInfo.pickle','rb') as f:
+with open(dir_path+'/Data/itemInfo.pickle'.replace('/',os.sep),'rb') as f:
     itemInfo = pickle.load(f)
 
 itemPrices = {}
-with open(dir_path+'/Data/itemPrices.pickle','rb') as f:
+with open(dir_path+'/Data/itemPrices.pickle'.replace('/',os.sep),'rb') as f:
     itemPrices = pickle.load(f)
 
 itemCats = {}
-with open(dir_path+'/Data/itemCats.pickle','rb') as f:
+with open(dir_path+'/Data/itemCats.pickle'.replace('/',os.sep),'rb') as f:
     itemCats = pickle.load(f)
 
 viableItems = []
-with open(dir_path+'/Data/viableItems.pickle','rb') as f:
+with open(dir_path+'/Data/viableItems.pickle'.replace('/',os.sep),'rb') as f:
     viableItems = pickle.load(f)
 
 def getInfo(item):

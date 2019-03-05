@@ -216,6 +216,7 @@ def TSVtoPickle():
     items = [a.split('\t') for a in lines]
     arr = {}
     for item in items:
+        print(item)
         dic = {}
         i = 0
         for k in KEYS:
@@ -268,4 +269,4 @@ def loadItemPrices():
 
 
 if __name__ == "__main__":
-    storeItemPricesPickle()
+    TSVtoPickle()

@@ -115,6 +115,15 @@ def getSimilarItems(item1,n=5):
                 items[idx] = item2
     return [(items[i],sim[i]) for i in range(n)]
 
+def bollingerBands(data):
+    means = []
+    stds = []
+    for i in range(20,len(data)):
+        d = data[i-20:i]
+        means.append(np.mean(d))
+        stds.append(np.std(d))
+    return np.array(means),np.array(stds)
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     item = 'Abyssal_whip'

@@ -7,6 +7,7 @@ import pickle
 import ast
 import datetime
 from time import strptime
+import os
 
 URL = 'https://oldschool.runescape.wiki'
 KEYS = ['name','image','released','update','members','quest','tradeable','equipable',
@@ -242,19 +243,19 @@ def getHistoricalPrices(item):
     return p
 
 def storeItemPricesPickle():
-    with open('Data/itemInfo.pickle', 'rb') as f:
+    with open('Data'+os.sep+'itemInfo.pickle', 'rb') as f:
         itemInfo = pickle.load(f)
 
     info = {}
     i = 0
     for item in itemInfo:
-        prices = getHistoricalPrices(item['name'])
+        prices = getHistoricalPrices(item)
         if prices!=None:
-            info[item['name']] = prices
+            info[item] = prices
         print('{}/{} ({})'.format(i + 1, len(itemInfo), (float(i + 1) / float(len(itemInfo))) * 100))
         i+=1
 
-    with open('Data/itemPricesOriginal.pickle', 'wb') as f:
+    with open('Data'+os.sep+'itemPricesOriginal.pickle', 'wb') as f:
         pickle.dump(info,f)
 
 def loadItemInfo():
@@ -267,4 +268,4 @@ def loadItemPrices():
 
 
 if __name__ == "__main__":
-    storeItemCategoriesPickle()
+    storeItemPricesPickle()

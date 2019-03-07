@@ -36,7 +36,7 @@ def modelProfit(thresh,y_pred,data,buyLimit,budget):
     buyLimit = int(buyLimit)
     invent = 0
     profits = []
-    for i in range(len(y_pred)):
+    for i in range(len(data)-1):
         y = y_pred[i]
         if y-0.5>thresh:
             buy = budget//data[i]

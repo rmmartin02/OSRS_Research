@@ -31,20 +31,19 @@ def buyAndHold(data,buyLimit,budget):
     return profits
 
 
-def modelProfit(thresh,y_pred,data,buyLimit,budget):
+def modelProfit(buy_signal,sell_signal,data,buyLimit,budget):
     init = budget
     buyLimit = int(buyLimit)
     invent = 0
     profits = []
     for i in range(len(data)-1):
-        y = y_pred[i]
-        if y-0.5>thresh:
+        if buy_signal[i]:
             buy = budget//data[i]
             if buy>buyLimit:
                 buy = buyLimit
             invent += buy
             budget -= buy * data[i]
-        if y<0.5:
+        elif sell_signal[i]:
             budget += invent * data[i]
             invent = 0
         profits.append(((budget + invent * data[i]) - init) / init)
@@ -85,3 +84,6 @@ def crossOverProfit(ind, sig, data,buyLimit,budget):
             budget -= buy * data[i]
         profits.append(((budget + invent * data[i]) - init) / init)
     return profits
+
+def baselines(data,buyLimit,budget):
+    return perfectProfit(data,buyLimit,budget),persistanceProfit(data,buyLimit,budget),buyAndHold(data,buyLimit,budget)

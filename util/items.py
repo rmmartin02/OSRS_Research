@@ -26,16 +26,13 @@ with open(dir_path+'/Data/viableItems.pickle'.replace('/',os.sep),'rb') as f:
 def getInfo(item):
     return itemInfo[item]
 
-def getViableItems(
-
-):
+def getViableItems():
     return viableItems
 
 def getPrices(item):
     return [a[1] for a in itemPrices[item]]
 
-def getPriceChanges(item):
-    p = getPrices(item)
+def getPriceChanges(p):
     return [p[i+1]-p[i] for i in range(len(p)-1)]
 
 def sma(prices, n=7):

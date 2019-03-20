@@ -1,0 +1,28 @@
+Vary the number and size of layers
+
+Check different targets
+    For
+        item
+        index of items
+            category
+            of same item but different type (potions)
+
+    Regression
+        Price
+        Price Changes
+        Moving Averages
+    Classification
+        Price up or down
+        Price up a lot or price down a lot
+        Start of long rise or start of long fall
+
+    Check if these can be translated to buy/sell signals
+
+Check different features
+    price changes
+    moving averages
+    momentum
+    stochastic oscillator
+    macd
+    day of week
+

@@ -12,15 +12,37 @@ import numpy as np
 
 if __name__ == "__main__":
 
-    item = "Yew_logs"
+    item = "Dragon_dagger(p++)"
+
+    itemIndex = [
+        "Yew_logs",
+        "Maple_logs",
+        "Willow_logs",
+        "Oak_logs",
+        "Magic_logs",
+    ]
+    pri = [items.getPrices(item) for item in itemIndex]
+    minLength = len(pri[0])
+    for p in pri:
+        if len(p)<minLength:
+            minLength = len(p)
+    prices = [0] * minLength
+    for i in range(-1,-1*minLength,-1):
+        s = 0
+        for a in pri:
+            s+=a[i]
+        s/=len(pri)
+        prices[i] = s
 
     prices = items.getPrices(item)
-    changes = items.getPriceChanges(item)
+    changes = items.getPriceChanges(prices)
+
+
     sma3 = items.sma(changes,3)
     ema3 = items.ema(changes,3)
 
     featSizes = [10]
-    model = rm.RegressionModel(sma3,[changes],featSizes,'sigmoid',sum(featSizes),sum(featSizes),.8,.9)
+    model = rm.RegressionModel(changes,[changes],featSizes,'sigmoid',sum(featSizes),sum(featSizes),.8,.9)
     model.train(30,8)
     model.graphLoss()
     model.graphMAE()

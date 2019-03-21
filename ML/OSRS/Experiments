@@ -6,10 +6,13 @@ Check different targets
         index of items
             category
             of same item but different type (potions)
+            top 100 most traded
+            top 100 most expensive
 
     Regression
         Price
         Price Changes
+        Price change in several days
         Moving Averages
     Classification
         Price up or down
@@ -17,6 +20,10 @@ Check different targets
         Start of long rise or start of long fall
 
     Check if these can be translated to buy/sell signals
+        price changes obviously directly translate
+            but can adjust based on size of the change
+        many trading systems exist using technical indicators
+            predict technical indicators then use those for the trading system
 
 Check different features
     price changes
@@ -26,3 +33,32 @@ Check different features
     macd
     day of week
 
+Compare with real world markets
+    stock indexes
+    stocks
+    forex
+    resources
+
+
+
+
+
+Use last 21 days of pricing
+3 layer network with 21 nodes in each layer
+regression for price change
+go until convergence
+record results
+    epochs to converge
+    beginning training/validation error
+    ending training/validation error
+    profits
+        prices
+        model trained
+            predictions
+            buy signal limit
+            sell signal limit
+            list of buy signals
+            list of sell signals
+        perfect
+        persistant
+        buy and hold

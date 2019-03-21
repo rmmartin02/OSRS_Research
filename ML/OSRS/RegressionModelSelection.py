@@ -7,13 +7,18 @@ print(sys.path)
 import util.items as items
 import util.trading_systems as ts
 import util.regression_model as rm
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import pandas_datareader.data as web
+from datetime import datetime
+
 
 if __name__ == "__main__":
 
-    item = "Dragon_dagger(p++)"
+    item = "Abyssal_whip"
 
+    with open("../../Data/top100Items.txt","r") as f:
+        itemIndex = f.readlines()
     itemIndex = [
         "Yew_logs",
         "Maple_logs",
@@ -29,21 +34,30 @@ if __name__ == "__main__":
     prices = [0] * minLength
     for i in range(-1,-1*minLength,-1):
         s = 0
+        # should probably scale the prices here for doing indexes?
         for a in pri:
             s+=a[i]
         s/=len(pri)
         prices[i] = s
 
-    prices = items.getPrices(item)
+
+    start = datetime(2015, 3, 1)
+
+    end = datetime(2019, 3, 1)
+
+    f = web.DataReader('AAPL', 'iex', start, end)
+    prices = np.array(f["close"])
+
+    #prices = items.getPrices(item)
     changes = items.getPriceChanges(prices)
 
 
     sma3 = items.sma(changes,3)
     ema3 = items.ema(changes,3)
 
-    featSizes = [10]
+    featSizes = [21]
     model = rm.RegressionModel(changes,[changes],featSizes,'sigmoid',sum(featSizes),sum(featSizes),.8,.9)
-    model.train(30,8)
+    model.train(50,16)
     model.graphLoss()
     model.graphMAE()
     model.graphPredict()
@@ -76,7 +90,7 @@ if __name__ == "__main__":
     buySigs = [a >= best[1] for a in y_pred]
     sellSigs = [a <= best[2] for a in y_pred]
     profit = ts.modelProfit(buySigs, sellSigs, test_prices, bl, budget)
-    best = [profit[-1],buySig,sellSig,len([a for a in buySigs if a==True]),len([a for a in sellSigs if a==True])]
+    best = [profit[-1],best[1],best[2],len([a for a in buySigs if a==True]),len([a for a in sellSigs if a==True])]
     print(best)
 
     plt.plot(test_prices)
@@ -90,6 +104,8 @@ if __name__ == "__main__":
     plt.show()
 
     perf,pers,BaH = ts.baselines(test_prices,bl,budget)
+    print(perf[-1],pers[-1],BaH[-1])
+    print(pers)
 
     plt.plot(perf, label = 'Perfect')
     plt.plot(pers,label = 'Persist')

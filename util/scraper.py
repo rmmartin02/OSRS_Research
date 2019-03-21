@@ -267,6 +267,19 @@ def loadItemPrices():
     with open('Data/itemPrices.pickle','rb') as f:
         return pickle.load(f)
 
+def getTop100Stocks():
+    r = requests.get("http://www.wsj.com/mdc/public/page/2_3021-activnyse-actives.html")
+    soup = BeautifulSoup(r.text, features="html.parser")
+    links = soup.find_all("a",{"class":"linkb"})
+    with open("../Data/top100stocks.txt", "w") as f:
+        for l in links:
+            f.write(l['href'].replace("/public/quotes/main.html?symbol=","") + "\n")
+
 
 if __name__ == "__main__":
-    TSVtoPickle()
+    r = requests.get("http://services.runescape.com/m=itemdb_oldschool/top100?list=0&scale=3")
+    soup = BeautifulSoup(r.text, features="html.parser")
+    links = soup.find_all("a", {"class": "table-item-link"})
+    with open("../Data/top100Items.txt", "w") as f:
+        for l in links:
+            f.write(l['href'].split("/")[4] + "\n")

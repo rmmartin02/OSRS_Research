@@ -1,8 +1,6 @@
-import keras
-from keras.layers import InputLayer
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation
-from keras.optimizers import SGD
+from keras.layers import Dense
+from keras.callbacks import EarlyStopping
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
@@ -15,10 +13,14 @@ class RegressionModel:
 
 
     def train(self,e,b):
-        self.history = self.model.fit(self.x_train, self.y_train,
-                  validation_data=(self.x_val, self.y_val),
-                  epochs=e,
-                  batch_size=b)
+        es = EarlyStopping(monitor='val_loss', mode='min', patience=10)
+        self.history = self.model.fit(
+            self.x_train, self.y_train,
+            validation_data=(self.x_val, self.y_val),
+            epochs=e,
+            batch_size=b,
+            callbacks=[es]
+            )
 
     def changeModel(self,layer1,layer2,activation):
         self.model = Sequential()

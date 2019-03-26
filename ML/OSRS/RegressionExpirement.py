@@ -15,52 +15,33 @@ from datetime import datetime
 
 if __name__ == "__main__":
 
-    item = "Abyssal_whip"
-
+    #get list of items (probably divide this up)
     with open("../../Data/top100Items.txt","r") as f:
         itemIndex = f.readlines()
-    itemIndex = [
-        "Yew_logs",
-        "Maple_logs",
-        "Willow_logs",
-        "Oak_logs",
-        "Magic_logs",
-    ]
-    pri = [items.getPrices(item) for item in itemIndex]
-    minLength = len(pri[0])
-    for p in pri:
-        if len(p)<minLength:
-            minLength = len(p)
-    prices = [0] * minLength
-    for i in range(-1,-1*minLength,-1):
-        s = 0
-        # should probably scale the prices here for doing indexes?
-        for a in pri:
-            s+=a[i]
-        s/=len(pri)
-        prices[i] = s
 
+    #go through list training model for each item
+    toWrite = []
 
-    start = datetime(2015, 3, 1)
-
-    end = datetime(2019, 3, 1)
-
-    f = web.DataReader('F', 'iex', start, end)
-    prices = np.array(f["close"])
+    item = "Abyssal_whip"
+    toWrite.append(item)
 
     prices = items.getPrices(item)
     changes = items.getPriceChanges(prices)
-
-
-    sma3 = items.sma(changes,3)
-    ema3 = items.ema(changes,3)
+    toWrite.append(len(prices))
 
     featSizes = [21]
     model = rm.RegressionModel(changes,[changes],featSizes,'sigmoid',sum(featSizes),sum(featSizes),.8,.9)
+
+    beforeScore = model.getScore()
+    toWrite.append(beforeScore[0])
+    toWrite.append(beforeScore[1])
+
     model.train(50,16)
-    model.graphLoss()
-    model.graphMAE()
-    model.graphPredict()
+
+    print(model.getScore())
+    afterScore = model.getScore()
+    toWrite.append(afterScore[0])
+    toWrite.append(afterScore[1])
 
 
     bl = int(items.getInfo(item)['buyLimit'])
@@ -87,33 +68,20 @@ if __name__ == "__main__":
     budget = test_prices[0]
     y_pred = model.predict(model.x_test)
 
+    toWrite.append(bl)
+    toWrite.append(budget)
+    toWrite.append(test_prices)
+
     buySigs = [a >= best[1] for a in y_pred]
     sellSigs = [a <= best[2] for a in y_pred]
     profit = ts.modelProfit(buySigs, sellSigs, test_prices, bl, budget)
     best = [profit[-1],best[1],best[2],len([a for a in buySigs if a==True]),len([a for a in sellSigs if a==True])]
-    print(best)
 
-    plt.plot(test_prices)
-    top = max(test_prices)
-    bot = max(test_prices)
-    for i in range(len(test_prices)):
-        if buySigs[i]:
-            plt.axvline(i,color='g')
-        if sellSigs[i]:
-            plt.axvline(i,color='r')
-    plt.show()
+
+    toWrite.append(best[1])
+    toWrite.append(best[2])
+
+
 
     perf,pers,BaH = ts.baselines(test_prices,bl,budget)
-    sma12 = items.sma(test_prices,12)
-    sma3 = items.sma(test_prices,3)[-1*len(sma12):]
-    print('sma len',len(sma3),len(sma12))
-    smaCross = ts.crossOverProfit(sma3,sma12,test_prices,bl,budget)
-    print(profit[-1],perf[-1],pers[-1],BaH[-1],smaCross[-1])
-
-    plt.plot(perf, label = 'Perfect')
-    plt.plot(pers,label = 'Persist')
-    plt.plot(BaH, label = 'B&H')
-    plt.plot(profit, label = 'Model')
-    plt.plot(smaCross, label = 'smaCross')
-    plt.legend()
-    plt.show()
+    print(profit[-1],perf[-1],pers[-1],BaH[-1])

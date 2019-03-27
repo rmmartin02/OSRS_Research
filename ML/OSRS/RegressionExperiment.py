@@ -21,8 +21,13 @@ def main():
     with open("ItemLists/list{}".format(num), "r") as f:
         itemList = f.readlines()
 
-    with open("Results/{}.pickle".format(num),'rb') as f:
-        info = pickle.load(f)
+
+    info = {}
+    try:
+        with open("Results/{}.pickle".format(num),'rb') as f:
+            info = pickle.load(f)
+    except FileNotFoundError:
+        pass
 
     count = 0
     for item in itemList:

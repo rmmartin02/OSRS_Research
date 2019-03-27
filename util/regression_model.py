@@ -19,7 +19,8 @@ class RegressionModel:
             validation_data=(self.x_val, self.y_val),
             epochs=e,
             batch_size=b,
-            callbacks=[es]
+            callbacks=[es],
+            verbose=0
             )
 
     def changeModel(self,layer1,layer2,activation):

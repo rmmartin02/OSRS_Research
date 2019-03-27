@@ -126,7 +126,7 @@ class RegressionModel:
 
 
     def getHistory(self):
-        return self.history
+        return self.history.history
 
     def getScore(self):
         return self.model.evaluate(self.x_test, self.y_test, batch_size=1)

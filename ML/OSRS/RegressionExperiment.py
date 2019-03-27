@@ -5,6 +5,7 @@ print(address)
 sys.path.append(address)
 print(sys.path)
 import util.items as items
+import pickle
 
 
 def main():
@@ -20,36 +21,38 @@ def main():
     with open("ItemLists/list{}".format(num), "r") as f:
         itemList = f.readlines()
 
+    info = {}
+    count = 0
     for item in itemList:
         # go through list training model for each item
         try:
             item = item.strip()
-            toWrite = []
+            toWrite = {}
 
-            toWrite.append(item)
+            toWrite['item'] = item
 
             prices = items.getPrices(item)
             changes = items.getPriceChanges(prices)
-            toWrite.append(len(prices))
+            toWrite['numPrices'] = len(prices)
 
             featSizes = [21]
             model = rm.RegressionModel(changes, [changes], featSizes, 'sigmoid', sum(featSizes), sum(featSizes), .8, .9)
 
             beforeScore = model.getScore()
-            toWrite.append(beforeScore[0])
-            toWrite.append(beforeScore[1])
+            toWrite['startLoss'] = beforeScore[0]
+            toWrite['startMAE'] = beforeScore[1]
 
             model.train(50, 16)
 
             afterScore = model.getScore()
-            toWrite.append(afterScore[0])
-            toWrite.append(afterScore[1])
+            toWrite['endLoss'] = afterScore[0]
+            toWrite['endMAE'] = afterScore[1]
 
-            toWrite.append(len(model.getHistory()['loss']))
+            toWrite['numEpochs'] = len(model.getHistory()['loss'])
 
             bl = int(items.getInfo(item)['buyLimit'])
             test_prices = prices[-1 * len(model.y_test) + -1 * len(model.y_val):-1 * len(model.y_test)]
-            budget = test_prices[0]
+            budget = test_prices[0]*bl
             y_pred = model.predict(model.x_val)
 
             buySigs = [a >= 0 for a in y_pred]
@@ -67,38 +70,43 @@ def main():
                                 len([a for a in sellSigs if a == True])]
 
             test_prices = prices[-1 * len(model.y_test):]
-            budget = test_prices[0]
+            budget = test_prices[0]*bl
             y_pred = model.predict(model.x_test)
 
-            toWrite.append(bl)
-            toWrite.append(budget)
-            toWrite.append(test_prices)
-            toWrite.append(list(y_pred))
+            toWrite['buyLimit'] = bl
+            toWrite['budget'] = budget
+            toWrite['testPrices'] = test_prices
+            temp =  y_pred.tolist()
+            toWrite['predictions'] = temp
 
             buySigs = [a >= best[1] for a in y_pred]
             sellSigs = [a <= best[2] for a in y_pred]
             profit = ts.modelProfit(buySigs, sellSigs, test_prices, bl, budget)
-            best = [profit[-1], best[1], best[2], len([a for a in buySigs if a == True]),
-                    len([a for a in sellSigs if a == True])]
+            best = [profit[-1], best[1], best[2], len([a for a in buySigs if a == True]), len([a for a in sellSigs if a == True])]
 
-            toWrite.append(best[1])
-            toWrite.append(best[2])
-            toWrite.append(best[3])
-            toWrite.append(best[4])
+            toWrite['buySignal'] = best[1]
+            toWrite['sellSignal'] = best[2]
+            toWrite['numBuys'] = best[3]
+            toWrite['numSells'] = best[4]
 
-            toWrite.append(profit[-1])
+            toWrite['model'] = profit[-1]
 
             perf, pers, BaH = ts.baselines(test_prices, bl, budget)
-            toWrite.append(perf[-1])
-            toWrite.append(pers[-1])
-            toWrite.append(BaH[-1])
+            toWrite['perfect'] = perf[-1]
+            toWrite['persist'] = pers[-1]
+            toWrite['buyAndHold'] = BaH[-1]
 
-            with open("Results/{}.tsv".format(num), 'a') as f:
-                for a in toWrite:
-                    f.write(str(a) + '\t')
-                f.write('\n')
+            info[item] = toWrite
         except:
             pass
+
+        if count%50 == 0:
+            with open('Results{}{}.pickle'.format(os.sep,num), 'wb') as f:
+                pickle.dump(info,f)
+        count+=1
+
+    with open('Results{}{}.pickle'.format(os.sep, num), 'wb') as f:
+        pickle.dump(info, f)
 
 def createList():
     keys = list(items.itemPrices.keys())

@@ -244,7 +244,7 @@ def getHistoricalPrices(item):
     return p
 
 def storeItemPricesPickle():
-    with open('Data'+os.sep+'itemInfo.pickle', 'rb') as f:
+    with open('../Data'+os.sep+'itemInfo.pickle', 'rb') as f:
         itemInfo = pickle.load(f)
 
     info = {}
@@ -256,7 +256,7 @@ def storeItemPricesPickle():
         print('{}/{} ({})'.format(i + 1, len(itemInfo), (float(i + 1) / float(len(itemInfo))) * 100))
         i+=1
 
-    with open('Data'+os.sep+'itemPricesOriginal.pickle', 'wb') as f:
+    with open('../Data'+os.sep+'itemPricesOriginal.pickle', 'wb') as f:
         pickle.dump(info,f)
 
 def loadItemInfo():
@@ -275,11 +275,13 @@ def getTop100Stocks():
         for l in links:
             f.write(l['href'].replace("/public/quotes/main.html?symbol=","") + "\n")
 
-
-if __name__ == "__main__":
+def getTop100Items():
     r = requests.get("http://services.runescape.com/m=itemdb_oldschool/top100?list=0&scale=3")
     soup = BeautifulSoup(r.text, features="html.parser")
     links = soup.find_all("a", {"class": "table-item-link"})
     with open("../Data/top100Items.txt", "w") as f:
         for l in links:
             f.write(l['href'].split("/")[4] + "\n")
+
+if __name__ == "__main__":
+    storeItemPricesPickle()

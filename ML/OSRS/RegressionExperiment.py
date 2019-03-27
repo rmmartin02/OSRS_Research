@@ -22,14 +22,13 @@ def main():
         itemList = f.readlines()
 
     with open("Results/{}.pickle".format(num),'rb') as f:
-        alreadyHave = pickle.load(f)
+        info = pickle.load(f)
 
-    info = {}
     count = 0
     for item in itemList:
         item = item.strip()
         print(item)
-        if item not in alreadyHave:
+        if item not in info:
             print('Processing',item)
             # go through list training model for each item
             try:
@@ -58,7 +57,7 @@ def main():
 
                 bl = int(items.getInfo(item)['buyLimit'])
                 test_prices = prices[-1 * len(model.y_test) + -1 * len(model.y_val):-1 * len(model.y_test)]
-                budget = test_prices[0]*bl
+                budget = test_prices[0]*bl+1
                 y_pred = model.predict(model.x_val)
 
                 buySigs = [a >= 0 for a in y_pred]
@@ -76,7 +75,7 @@ def main():
                                     len([a for a in sellSigs if a == True])]
 
                 test_prices = prices[-1 * len(model.y_test):]
-                budget = test_prices[0]*bl
+                budget = test_prices[0]*bl+1
                 y_pred = model.predict(model.x_test)
 
                 toWrite['buyLimit'] = bl

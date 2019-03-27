@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     bl = int(items.getInfo(item)['buyLimit'])
     test_prices = prices[-1 * len(model.y_test) + -1*len(model.y_val):-1 * len(model.y_test)]
-    budget = test_prices[0]*bl
+    budget = test_prices[0]*bl+1
     y_pred = model.predict(model.x_val)
 
     buySigs = [a >= 0 for a in y_pred]
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
 
     test_prices = prices[-1 * len(model.y_test):]
-    budget = test_prices[0]*bl
+    budget = test_prices[0]*bl+1
     y_pred = model.predict(model.x_test)
 
     buySigs = [a >= best[1] for a in y_pred]

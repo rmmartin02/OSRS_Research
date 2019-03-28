@@ -107,7 +107,10 @@ def main():
                 toWrite['buyAndHold'] = BaH[-1]
 
                 info[item] = toWrite
-            except:
+            except Exception as e:
+                if isinstance(e, KeyboardInterrupt):
+                    sys.exit()
+                print(e)
                 pass
 
             if count%25 == 0:

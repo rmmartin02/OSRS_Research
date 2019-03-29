@@ -116,7 +116,7 @@ def main():
                     toWrite['buyAndHold'] = BaH[-1]
 
                     info[item] = toWrite
-                print(info)
+                #print(info)
             except Exception as e:
                 if isinstance(e, KeyboardInterrupt):
                     sys.exit()

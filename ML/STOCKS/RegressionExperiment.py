@@ -43,7 +43,7 @@ def main():
 
                 toWrite['stock'] = item
 
-                start = datetime(2015, 3, 1)
+                start = datetime(2015, 1, 1)
 
                 end = datetime(2019, 3, 25)
 
@@ -69,7 +69,7 @@ def main():
 
                     toWrite['numEpochs'] = len(model.getHistory()['loss'])
 
-                    bl = int(items.getInfo(item)['buyLimit'])
+                    bl = 100
                     test_prices = prices[-1 * len(model.y_test) + -1 * len(model.y_val):-1 * len(model.y_test)]
                     budget = test_prices[0]*bl+1
                     y_pred = model.predict(model.x_val)
@@ -116,15 +116,16 @@ def main():
                     toWrite['buyAndHold'] = BaH[-1]
 
                     info[item] = toWrite
+                print(info)
             except Exception as e:
                 if isinstance(e, KeyboardInterrupt):
                     sys.exit()
-                print(e)
+                print('error',e)
                 pass
 
-                if count%25 == 0:
-                    with open('Results{}{}.pickle'.format(os.sep,num), 'wb') as f:
-                        pickle.dump(info,f)
+            if count%25 == 0:
+                with open('Results{}{}.pickle'.format(os.sep,num), 'wb') as f:
+                    pickle.dump(info,f)
             count+=1
 
     with open('Results{}{}.pickle'.format(os.sep, num), 'wb') as f:

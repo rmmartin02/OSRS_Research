@@ -15,7 +15,7 @@ from datetime import datetime
 
 if __name__ == "__main__":
 
-    item = "Abyssal_whip"
+    item = "Prayer_potion(4)"
 
     with open("../../Data/top100Items.txt","r") as f:
         itemIndex = f.readlines()
@@ -51,12 +51,28 @@ if __name__ == "__main__":
     prices = items.getPrices(item)
     changes = items.getPriceChanges(prices)
 
+    sma5 = items.sma(changes,5)
+    ema5 = items.ema(changes,5)
 
-    sma3 = items.sma(changes,3)
-    ema3 = items.ema(changes,3)
+    #all [0.6288924502570609, 0.44649100230618133]
+    #no ema [0.5967839539733621, 0.4365778479644721]
+    #no sma [0.6045633982520005, 0.44838545833238597]
+    #no changes [0.605660682296777, 0.4360905327438879]
+
+    #all prayer pots [0.6392273480790555, 0.5626463457643985]
+    #only one [0.6460398975707358, 0.5779683970808983]
 
     featSizes = [21]
     model = rm.RegressionModel(changes,[changes],featSizes,'sigmoid',sum(featSizes),sum(featSizes),.8,.9)
+
+    if False:
+        similar = items.getSimilarItems(item,3)
+        simChanges = changes
+        for s in similar:
+            print(s)
+            simChanges = simChanges + items.getPriceChanges(items.getPrices(s[0]))
+        model.changeTrainingData(simChanges,[simChanges],[21])
+
     model.train(50,16)
     model.graphLoss()
     model.graphMAE()
@@ -108,7 +124,7 @@ if __name__ == "__main__":
     sma12 = items.sma(test_prices,12)
     sma3 = items.sma(test_prices,3)[-1*len(sma12):]
     print('sma len',len(sma3),len(sma12))
-    smaCross = ts.crossOverProfit(sma3,sma12,test_prices,bl,budget)
+    smaCross = ts.crossOverProfit(items.sma(y_pred),sma12,test_prices,bl,budget)
     print(profit[-1],perf[-1],pers[-1],BaH[-1],smaCross[-1])
 
     plt.plot(perf, label = 'Perfect')

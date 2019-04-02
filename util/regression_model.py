@@ -84,6 +84,45 @@ class RegressionModel:
         self.x_test = np.array(self.x[s2:])
         self.y_test = np.array(self.y[s2:])
 
+    def changeTrainingData(self,labels,features,featuresizes):
+        x = []
+        y = []
+        self.features = features
+        self.featuresizes = featuresizes
+
+        self.size = sum(self.featuresizes)
+        fsMax = max(self.featuresizes)
+
+        # get feature list with smallest length so we can scale everything else
+        fMin = len(self.features[0])
+        for f in self.features:
+            if len(f) < fMin:
+                fMin = len(f)
+
+        self.features = self.features
+        for i in range(len(self.features)):
+            self.features[i] = self.features[i][-1 * fMin:]
+
+        scaler = StandardScaler()
+
+        for i in range(len(self.features)):
+            self.features[i] = list(
+                scaler.fit_transform(np.array(self.features[i]).reshape(-1, 1)).reshape(
+                    len(self.features[i]), ))
+
+        for i in range(-1 * fMin + fsMax, 0, 1):
+            xelem = []
+            for j in range(len(self.features)):
+                xelem = xelem + list(self.features[j][i - featuresizes[j]:i])
+            x.append(xelem)
+            y.append(labels[i])
+
+        y = list(scaler.fit_transform(np.array(y).reshape(-1, 1)).reshape(len(y), ))
+
+        self.x_train = np.array(x)
+        self.y_train = np.array(y)
+
+
 
     def predict(self,x):
         return self.model.predict(x)

@@ -35,20 +35,17 @@ def buyAndHold(data,buyLimit,budget):
     return profits
 
 
-def modelProfit(buy_signal,sell_signal,data,buyLimit,budget):
+def modelProfit(buy_signal,sell_signal,data,budget):
     init = budget
-    buyLimit = int(buyLimit)
     invent = 0
     profits = []
-    for i in range(len(data)-1):
+    for i in range(len(data)):
         if buy_signal[i]:
             #sell first then buy
             if invent>0:
                 budget += invent * data[i]
                 invent = 0
             buy = budget//data[i]
-            if buy>buyLimit:
-                buy = buyLimit
             invent += buy
             budget -= buy * data[i]
         elif sell_signal[i] and invent>0:
@@ -57,9 +54,8 @@ def modelProfit(buy_signal,sell_signal,data,buyLimit,budget):
         profits.append(((budget + invent * data[i]) - init) / init)
     return profits
 
-def persistanceProfit(data,buyLimit,budget):
+def persistanceProfit(data, budget):
     init = budget
-    buyLimit = int(buyLimit)
     invent = 0
     profits = []
     for i in range(1,len(data)):
@@ -68,8 +64,6 @@ def persistanceProfit(data,buyLimit,budget):
                 budget += invent * data[i]
                 invent = 0
             buy = budget//data[i]
-            if buy>buyLimit:
-                buy = buyLimit
             invent += buy
             budget -= buy * data[i]
         elif invent>0:
@@ -78,9 +72,8 @@ def persistanceProfit(data,buyLimit,budget):
         profits.append(((budget + invent * data[i]) - init) / init)
     return profits
 
-def crossOverProfit(ind, sig, data,buyLimit,budget):
+def crossOverProfit(ind, sig, data, budget):
     init = budget
-    buyLimit = int(buyLimit)
     invent = 0
     profits = []
     for i in range(-1 * len(sig) + 1, -1, 1):
@@ -92,8 +85,6 @@ def crossOverProfit(ind, sig, data,buyLimit,budget):
                 budget += invent * data[i]
                 invent = 0
             buy = budget // data[i]
-            if buy > buyLimit:
-                buy = buyLimit
             invent += buy
             budget -= buy * data[i]
         profits.append(((budget + invent * data[i]) - init) / init)

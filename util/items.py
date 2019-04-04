@@ -35,6 +35,9 @@ def getPrices(item):
 def getPriceChanges(p):
     return [p[i+1]-p[i] for i in range(len(p)-1)]
 
+def getPercentChanges(p):
+    return [(p[i+1]-p[i])/p[i] for i in range(len(p)-1)]
+
 def sma(prices, n=7):
     ret = np.cumsum(prices, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]

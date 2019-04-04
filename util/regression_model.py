@@ -3,6 +3,7 @@ from keras.layers import Dense
 from keras.callbacks import EarlyStopping
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 
 class RegressionModel:

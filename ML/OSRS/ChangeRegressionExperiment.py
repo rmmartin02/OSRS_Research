@@ -7,6 +7,7 @@ print(sys.path)
 import util.items as items
 import pickle
 
+
 def main():
     import util.trading_systems as ts
     import util.regression_model as rm
@@ -23,7 +24,7 @@ def main():
 
     info = {}
     try:
-        with open("Results/{}.pickle".format(num),'rb') as f:
+        with open("Results/{}change.pickle".format(num),'rb') as f:
             info = pickle.load(f)
     except FileNotFoundError:
         pass
@@ -39,21 +40,16 @@ def main():
                 toWrite = {}
 
                 toWrite['item'] = item
-                prices = items.getPrices(item)
 
-                if len(prices) >= 1200:
+                prices = items.getPrices(item)
+                if len(prices)>=1200:
                     prices = prices[-1200:]
                     print(len(prices))
-                    #changes = items.getPriceChanges(prices)
+                    changes = items.getPriceChanges(prices)
                     toWrite['numPrices'] = len(prices)
-                    sma5 = items.sma(prices, 5)
-                    ema5 = items.ema(prices, 5)
 
-                    # 21 .11 .25
-                    # 7  .04 .10
-
-                    featSizes = [10, 5, 5]
-                    model = rm.RegressionModel(prices, [prices, sma5, ema5], featSizes, 'sigmoid', sum(featSizes), sum(featSizes), .8, .9)
+                    featSizes = [21]
+                    model = rm.RegressionModel(changes, [changes], featSizes, 'sigmoid', sum(featSizes), sum(featSizes), .8, .9)
 
                     beforeScore = model.getScore()
                     toWrite['startLoss'] = beforeScore[0]
@@ -67,25 +63,13 @@ def main():
 
                     toWrite['numEpochs'] = len(model.getHistory()['loss'])
 
-                    prices = items.getPrices(item)
-                    prices = prices[-1 * (len(model.y_train) + len(model.y_test) + len(model.y_val)):]
-
-                    print("prices lengths same", len(prices), len(model.y_train) + len(model.y_test) + len(model.y_val))
-
-                    # try to optimize out small predictions
-                    test_prices = prices[len(model.y_train):len(model.y_train) + len(model.y_val)]
-                    budget = test_prices[0] * 101 - 1
-                    y_pred = model.predict(model.x_val)
-
-                    print(len(test_prices), len(y_pred))
-
                     best = [-10000, 0, 0]
                     for buySig in np.linspace(-1, 1, 20):
                         for sellSig in np.linspace(1, -1, 20):
-                            buySigs = [(y_pred[i] - y_pred[i - 1]) / y_pred[i - 1] >= buySig for i in
+                            buySigs = [y_pred[i] >= buySig for i in
                                        range(1, len(y_pred))]
                             buySigs = [False] + buySigs
-                            sellSigs = [(y_pred[i] - y_pred[i - 1]) / y_pred[i - 1] <= sellSig for i in
+                            sellSigs = [y_pred[i] <= sellSig for i in
                                         range(1, len(y_pred))]
                             sellSigs = sellSigs + [False]
                             profit = ts.modelProfit(buySigs, sellSigs, test_prices, budget)[-1]
@@ -121,16 +105,16 @@ def main():
                     mom = items.momentum(test_prices, 10)
                     momProf = ts.crossOverProfit(mom[0], mom[1], test_prices, budget)
 
-                    buySigs = [y_pred[i] >= y_pred[i - 1] for i in range(1, len(y_pred))]
+                    buySigs = [y_pred[i] >= 0 for i in range(1, len(y_pred))]
                     buySigs = [False] + buySigs
-                    sellSigs = [y_pred[i] <= y_pred[i - 1] for i in range(1, len(y_pred))]
+                    sellSigs = [y_pred[i] < 0 for i in range(1, len(y_pred))]
                     sellSigs = [False] + sellSigs
                     print("lengths", len(buySigs), len(sellSigs), len(test_prices))
                     profit = ts.modelProfit(buySigs, sellSigs, test_prices, budget)
 
-                    buySigs = [(y_pred[i] - y_pred[i - 1]) / y_pred[i - 1] >= best[1] for i in range(1, len(y_pred))]
+                    buySigs = [y_pred[i] >= best[1] for i in range(1, len(y_pred))]
                     buySigs = [False] + buySigs
-                    sellSigs = [(y_pred[i] - y_pred[i - 1]) / y_pred[i - 1] <= best[2] for i in range(1, len(y_pred))]
+                    sellSigs = [y_pred[i] - y_pred[i - 1] <= best[2] for i in range(1, len(y_pred))]
                     sellSigs = sellSigs + [False]
                     profit_opt = ts.modelProfit(buySigs, sellSigs, test_prices, budget)
 
@@ -165,19 +149,18 @@ def main():
                     toWrite['momentum_model'] = momProf_Pred[-1]
 
                     info[item] = toWrite
-                #print(info)
             except Exception as e:
                 if isinstance(e, KeyboardInterrupt):
                     sys.exit()
-                print('error',e)
+                print(e)
                 pass
 
             if count%25 == 0:
-                with open('Results{}{}.pickle'.format(os.sep,num), 'wb') as f:
+                with open('Results{}{}change.pickle'.format(os.sep,num), 'wb') as f:
                     pickle.dump(info,f)
             count+=1
 
-    with open('Results{}{}.pickle'.format(os.sep, num), 'wb') as f:
+    with open('Results{}{}change.pickle'.format(os.sep, num), 'wb') as f:
         pickle.dump(info, f)
 
 def createList():

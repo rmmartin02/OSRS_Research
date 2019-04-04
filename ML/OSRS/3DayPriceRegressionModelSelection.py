@@ -13,14 +13,6 @@ import pandas_datareader.data as web
 from datetime import datetime
 from sklearn.preprocessing import StandardScaler
 
-
-def scale(p):
-    m = max(p)
-    arr = [0.0] * len(p)
-    for i in range(len(p)):
-        arr[i] = p[i] / m
-    return arr
-
 if __name__ == "__main__":
 
     item = "Abyssal_whip"
@@ -56,7 +48,16 @@ if __name__ == "__main__":
     f = web.DataReader('F', 'iex', start, end)
     prices = np.array(f["close"])
 
+    def scale(p):
+        m = max(p)
+        arr = [0.0] * len(p)
+        for i in range(len(p)):
+            arr[i] = p[i]/m
+        return arr
+
     prices = items.getPrices(item)
+    plt.plot(prices)
+    plt.show()
 
     sma5 = items.sma(prices,5)
     ema5 = items.ema(prices,5)
@@ -71,8 +72,8 @@ if __name__ == "__main__":
 
     featSizes = [10,5,5]
     print(int(sum(featSizes)**.5))
-
-    model = rm.RegressionModel(prices,[scale(prices),scale(sma5),scale(ema5)],featSizes,'sigmoid',int(sum(featSizes)**.5),0,.8,.9)
+    print('lengths',len(prices[2:]),len(prices[:-2]))
+    model = rm.RegressionModel(sma5[2:],[prices[:-2],sma5[:-2],ema5[:-2]],featSizes,'sigmoid',int(sum(featSizes)**.5),0,.8,.9)
 
     if False:
         similar = items.getSimilarItems(item,3)
@@ -82,13 +83,12 @@ if __name__ == "__main__":
             simChanges = simChanges + items.getPriceChanges(items.getPrices(s[0]))
         model.changeTrainingData(simChanges,[simChanges],[21])
 
-    model.train(50,8)
+    model.train(100,16)
 
     prices = items.getPrices(item)
 
     model.graphLoss()
     model.graphMAE()
-    #model.graphPredict()
     print(model.getScore())
 
     print("prices lengths same", len(prices), len(model.y_train) + len(model.y_test) + len(model.y_val))
@@ -103,12 +103,18 @@ if __name__ == "__main__":
     best = [-10000, 0, 0]
     for buySig in np.linspace(0, 1, 20):
         for sellSig in np.linspace(-1, 0, 20):
-            buySigs = [(y_pred[i]-y_pred[i-1])/y_pred[i-1] >= buySig for i in
-                       range(1, len(y_pred))]
-            buySigs = [False] + buySigs
-            sellSigs = [(y_pred[i]-y_pred[i-1])/y_pred[i-1] <= sellSig for i in
-                        range(1, len(y_pred))]
-            sellSigs = sellSigs + [False]
+            buySigs = [(y_pred[i]-y_pred[i-3])/y_pred[i-3] >= buySig for i in range(3, len(y_pred)-3)]
+            buySigs = [False] * 3 + buySigs + [False]*3
+            for i in range(len(buySigs)):
+                if buySigs[i]:
+                    for j in range(1, 3):
+                        buySigs[i + j] = False
+            sellSigs = [(y_pred[i]-y_pred[i-3])/y_pred[i-3] <= sellSig for i in range(3, len(y_pred)-3)]
+            sellSigs = [False] * 3 + sellSigs + [False]*3
+            for i in range(len(sellSigs)):
+                if sellSigs[i]:
+                    for j in range(1, 3):
+                        sellSigs[i + j] = False
             profit = ts.modelProfit(buySigs, sellSigs, test_prices, budget)[-1]
             if profit > best[0]:
                 best = [profit, buySig, sellSig]
@@ -119,10 +125,40 @@ if __name__ == "__main__":
 
     scaler = StandardScaler()
     scaler.fit(np.array(test_prices).reshape(-1,1))
+    y_pred = scaler.inverse_transform(np.array(y_pred).reshape(-1,1))
 
-    plt.plot(scale(test_prices))
-    plt.plot(scale(scaler.inverse_transform(y_pred.reshape(-1,1))))
+    plt.plot(scale(test_prices[2:]))
+    plt.plot(scale(y_pred))
     plt.show()
+
+    buySigs = [(y_pred[i]-y_pred[i-3])/y_pred[i-3] >= 0 for i in range(3, len(y_pred)-3)]
+    buySigs = [False] * 3 +buySigs + [False] * 3
+    for i in range(len(buySigs)):
+        if buySigs[i]:
+            for j in range(1, 3):
+                buySigs[i + j] = False
+    sellSigs = [(y_pred[i]-y_pred[i-3])/y_pred[i-3] <= 0 for i in range(3, len(y_pred)-3)]
+    sellSigs = [False] * 3 + sellSigs + [False] * 3
+    for i in range(len(sellSigs)):
+        if sellSigs[i]:
+            for j in range(1, 3):
+                sellSigs[i + j] = False
+    print("length check", len(test_prices),len(buySigs),len(sellSigs))
+    profit_opt = ts.modelProfit(buySigs, sellSigs, test_prices, budget)
+
+    buySigs = [(y_pred[i]-y_pred[i-3])/y_pred[i-3] >= best[1] for i in range(3, len(y_pred)-3)]
+    buySigs = [False] * 3 + buySigs + [False] * 3
+    for i in range(len(buySigs)):
+        if buySigs[i]:
+            for j in range(1, 3):
+                buySigs[i + j] = False
+    sellSigs = [(y_pred[i]-y_pred[i-3])/y_pred[i-3] <= best[2] for i in range(2, len(y_pred)-3)]
+    sellSigs = [False] * 3 + sellSigs + [False] * 3
+    for i in range(len(sellSigs)):
+        if sellSigs[i]:
+            for j in range(1, 3):
+                sellSigs[i + j] = False
+    profit = ts.modelProfit(buySigs, sellSigs, test_prices, budget)
 
     print(len(test_prices), len(y_pred))
 
@@ -142,33 +178,7 @@ if __name__ == "__main__":
 
     BaH = [(test_prices[i] / test_prices[0]) - 1 for i in range(len(test_prices))]
 
-    smaProf = ts.crossOverProfit(items.sma(test_prices, 3), items.sma(test_prices, 12), test_prices,
-                                 budget)
-    stchOsc = items.stochOscil(test_prices, 3, 5)
-    stchOscProf = ts.crossOverProfit(stchOsc[0], stchOsc[1], test_prices, budget)
-    mom = items.momentum(test_prices, 10)
-    momProf = ts.crossOverProfit(mom[0], mom[1], test_prices, budget)
 
-    buySigs = [y_pred[i] >= y_pred[i-1] for i in range(1, len(y_pred))]
-    buySigs = [False] + buySigs
-    sellSigs = [y_pred[i] < y_pred[i-1] for i in range(1, len(y_pred))]
-    sellSigs = [False] + sellSigs
-    print("lengths", len(buySigs), len(sellSigs), len(test_prices))
-    profit = ts.modelProfit(buySigs, sellSigs, test_prices, budget)
-
-    buySigs = [(y_pred[i]-y_pred[i-1])/y_pred[i-1] >= best[1] for i in range(1, len(y_pred))]
-    buySigs = [False] + buySigs
-    sellSigs = [(y_pred[i]-y_pred[i-1])/y_pred[i-1] <= best[2] for i in range(1, len(y_pred))]
-    sellSigs = sellSigs + [False]
-    profit_opt = ts.modelProfit(buySigs, sellSigs, test_prices, budget)
-
-    smaProf_Pred = ts.crossOverProfit(items.sma(y_pred, 3), items.sma(y_pred, 12), test_prices, budget)
-    stchOsc = items.stochOscil(y_pred, 3, 5)
-    stchOscProf_Pred = ts.crossOverProfit(stchOsc[0], stchOsc[1], test_prices, budget)
-    mom = items.momentum(y_pred, 10)
-    momProf_Pred = ts.crossOverProfit(mom[0], mom[1], test_prices, budget)
 
     print(perf[-1], pers[-1], BaH[-1])
     print(profit[-1], profit_opt[-1], best[1], best[2])
-    print(smaProf[-1], stchOscProf[-1], momProf[-1])
-    print(smaProf_Pred[-1], stchOscProf_Pred[-1], momProf_Pred[-1])

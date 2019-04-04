@@ -29,7 +29,7 @@ def main():
 
     info = {}
     try:
-        with open("Results/{}price2.pickle".format(num),'rb') as f:
+        with open("Results/{}price.pickle".format(num),'rb') as f:
             info = pickle.load(f)
     except FileNotFoundError:
         pass
@@ -99,25 +99,6 @@ def main():
                             if profit > best[0]:
                                 best = [profit, buySig, sellSig]
 
-                    bestDays = [-1000, 1, 1]
-                    for buyDays in range(1, 8):
-                        for sellDays in range(1, 8):
-                            buySigs = [y_pred[i + buyDays] >= y_pred[i] for i in range(0, len(y_pred) - buyDays)]
-                            buySigs = buySigs + [False] * buyDays
-                            for i in range(len(buySigs)):
-                                if buySigs[i]:
-                                    for j in range(1, buyDays - 1):
-                                        buySigs[i + j] = False
-                            sellSigs = [y_pred[i + sellDays] <= y_pred[i] for i in range(0, len(y_pred) - sellDays)]
-                            sellSigs = sellSigs + [False] * sellDays
-                            for i in range(len(sellSigs)):
-                                if sellSigs[i]:
-                                    for j in range(1, sellDays - 1):
-                                        sellSigs[i + j] = False
-                            profit = ts.modelProfit(buySigs, sellSigs, test_prices, budget)
-                            if profit[-1] > bestDays[0]:
-                                bestDays = [profit[-1], buyDays, sellDays]
-
                     #now to calculate actual profits
                     test_prices = prices[-1 * len(model.y_test):]
                     budget = test_prices[0] * 101 - 1
@@ -161,22 +142,6 @@ def main():
                     sellSigs = sellSigs + [False]
                     profit_opt = ts.modelProfit(buySigs, sellSigs, test_prices, budget)
 
-                    buyDays = bestDays[1]
-                    sellDays = bestDays[2]
-                    buySigs = [y_pred[i + buyDays] >= y_pred[i] for i in range(0, len(y_pred) - buyDays)]
-                    buySigs = buySigs + [False] * buyDays
-                    for i in range(len(buySigs)):
-                        if buySigs[i]:
-                            for j in range(1, buyDays - 1):
-                                buySigs[i + j] = False
-                    sellSigs = [y_pred[i + sellDays] <= y_pred[i] for i in range(0, len(y_pred) - sellDays)]
-                    sellSigs = sellSigs + [False] * sellDays
-                    for i in range(len(sellSigs)):
-                        if sellSigs[i]:
-                            for j in range(1, sellDays - 1):
-                                sellSigs[i + j] = False
-                    profit_days = ts.modelProfit(buySigs, sellSigs, test_prices, budget)
-
                     smaProf_Pred = ts.crossOverProfit(items.sma(y_pred, 3), items.sma(y_pred, 12), test_prices, budget)
                     stchOsc = items.stochOscil(y_pred, 3, 5)
                     stchOscProf_Pred = ts.crossOverProfit(stchOsc[0], stchOsc[1], test_prices, budget)
@@ -196,9 +161,7 @@ def main():
 
                     toWrite['model'] = profit[-1]
                     toWrite['model_opt'] = profit_opt[-1]
-                    toWrite['model_days'] = profit_days[-1]
                     toWrite['opt_params'] = (best[1],best[2])
-                    toWrite['opt_days'] = (bestDays[1], bestDays[2])
                     toWrite['perfect'] = perf[-1]
                     toWrite['persist'] = pers[-1]
                     toWrite['buyAndHold'] = BaH[-1]
@@ -218,11 +181,11 @@ def main():
                 pass
 
             if count%25 == 0:
-                with open('Results{}{}price2.pickle'.format(os.sep,num), 'wb') as f:
+                with open('Results{}{}price.pickle'.format(os.sep,num), 'wb') as f:
                     pickle.dump(info,f)
             count+=1
 
-    with open('Results{}{}price2.pickle'.format(os.sep, num), 'wb') as f:
+    with open('Results{}{}price.pickle'.format(os.sep, num), 'wb') as f:
         pickle.dump(info, f)
 
 def createList():

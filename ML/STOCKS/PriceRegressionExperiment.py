@@ -21,8 +21,9 @@ def main():
     import numpy as np
 
     num = int(sys.argv[1])
+    gpu = sys.argv[2]
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(num)
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu
 
     # get list of items (probably divide this up)
     with open("Data/list{}".format(num), "r") as f:

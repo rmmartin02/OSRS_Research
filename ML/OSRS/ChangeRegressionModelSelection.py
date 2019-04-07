@@ -13,6 +13,16 @@ import pandas_datareader.data as web
 from datetime import datetime
 
 
+def scale(p):
+    m = max(p)
+    n = min(p)
+    if abs(n)>abs(m):
+        m = abs(n)
+    arr = [0.0] * len(p)
+    for i in range(len(p)):
+        arr[i] = p[i] / m
+    return arr
+
 if __name__ == "__main__":
 
     item = "Abyssal_whip"
@@ -59,7 +69,7 @@ if __name__ == "__main__":
 
     featSizes = [21]
     print(int(sum(featSizes)**.5))
-    model = rm.RegressionModel(changes,[changes],featSizes,'sigmoid',sum(featSizes),sum(featSizes),.8,.9)
+    model = rm.RegressionModel(scale(changes),[scale(changes)],featSizes,'sigmoid',sum(featSizes),sum(featSizes),.8,.9)
 
     if False:
         similar = items.getSimilarItems(item,3)
@@ -69,7 +79,7 @@ if __name__ == "__main__":
             simChanges = simChanges + items.getPriceChanges(items.getPrices(s[0]))
         model.changeTrainingData(simChanges,[simChanges],[21])
 
-    model.train(50,16)
+    model.train(100,16)
 
     prices = items.getPrices(item)
     changes = items.getPercentChanges(prices)
@@ -148,6 +158,17 @@ if __name__ == "__main__":
     stchOscProf_Pred = ts.crossOverProfit(stchOsc[0], stchOsc[1], test_prices, budget)
     mom = items.momentum(y_pred, 10)
     momProf_Pred = ts.crossOverProfit(mom[0], mom[1], test_prices, budget)
+
+    true_pos = len([y_pred[i] for i in range(len(y_pred)) if y_pred[i] > 0 and model.y_test[i] > 0])
+    false_pos = len([y_pred[i] for i in range(len(y_pred)) if y_pred[i] > 0 and model.y_test[i] < 0])
+    true_neg = len([y_pred[i] for i in range(len(y_pred)) if y_pred[i] < 0 and model.y_test[i] < 0])
+    false_neg = len([y_pred[i] for i in range(len(y_pred)) if y_pred[i] < 0 and model.y_test[i] > 0])
+    print('Accuracy', (true_pos + true_neg) / (true_pos + true_neg + false_pos + false_neg))
+    prec = (true_pos) / (true_pos + false_pos + .0001)
+    print('Precision',prec)
+    recall = (true_pos) / (true_pos + false_neg + .0001)
+    print('Recall',recall)
+    print('F1',(2 * recall * prec) / (recall + prec))
 
     print(perf[-1], pers[-1], BaH[-1])
     print(profit[-1], profit_opt[-1], best[1], best[2])

@@ -6,17 +6,14 @@ sys.path.append(address)
 print(sys.path)
 import util.items as items
 import pickle
+from yahoofinancials import YahooFinancials
 
 def scale(p):
     m = max(p)
-    n = min(p)
-    if abs(n)>abs(m):
-        m = abs(n)
     arr = [0.0] * len(p)
     for i in range(len(p)):
         arr[i] = p[i] / m
     return arr
-
 
 def main():
     import util.trading_systems as ts
@@ -28,7 +25,7 @@ def main():
     os.environ["CUDA_VISIBLE_DEVICES"] = str(num)
 
     # get list of items (probably divide this up)
-    with open("ItemLists/list{}".format(num), "r") as f:
+    with open("Data/list{}".format(num), "r") as f:
         itemList = f.readlines()
 
 
@@ -49,9 +46,12 @@ def main():
             try:
                 toWrite = {}
 
-                toWrite['item'] = item
+                toWrite['stock'] = item
 
-                prices = items.getPrices(item)
+                y = YahooFinancials(item).get_historical_price_data('2014-01-01', '2019-04-02', 'daily')
+                prices = np.array([a['adjclose'] for a in y[item]['prices']])
+
+
                 if len(prices)>=1200:
                     prices = prices[-1200:]
                     print(len(prices))
@@ -188,7 +188,7 @@ def createList():
     keys = list(items.itemPrices.keys())
     for i in range(4):
         s = len(items.itemPrices)//4
-        with open("ItemLists/list" + str(i), 'w') as f:
+        with open("Data/list" + str(i), 'w') as f:
             for j in range(s):
                 f.write(keys[i*s+j]+"\n")
 

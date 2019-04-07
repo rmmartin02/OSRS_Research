@@ -1,7 +1,7 @@
-def perfectProfit(data,buyLimit,budget):
-    init = budget
-    buyLimit = int(buyLimit)
-    invent = 0
+def perfectProfit(data,buyLimit,numItems):
+    invent = numItems
+    init = invent*data[0]
+    budget = 0
     profits = []
     for i in range(len(data)-1):
         if data[i+1]>data[i]:
@@ -20,10 +20,10 @@ def perfectProfit(data,buyLimit,budget):
         profits.append(((budget + invent * data[i]) - init) / init)
     return profits
 
-def buyAndHold(data,buyLimit,budget):
-    init = budget
-    buyLimit = int(buyLimit)
-    invent = 0
+def buyAndHold(data,buyLimit,numItems):
+    invent = numItems
+    init = invent*data[0]
+    budget = 0
     profits = []
     buy = budget//data[0]
     if buy>buyLimit:
@@ -35,9 +35,10 @@ def buyAndHold(data,buyLimit,budget):
     return profits
 
 
-def modelProfit(buy_signal,sell_signal,data,budget):
-    init = budget
-    invent = 0
+def modelProfit(buy_signal,sell_signal,data,numItems):
+    invent = numItems
+    init = invent*data[0]
+    budget = 0
     profits = []
     for i in range(len(data)):
         if buy_signal[i]:
@@ -54,9 +55,10 @@ def modelProfit(buy_signal,sell_signal,data,budget):
         profits.append(((budget + invent * data[i]) - init) / init)
     return profits
 
-def persistanceProfit(data, budget):
-    init = budget
-    invent = 0
+def persistanceProfit(data, numItems):
+    invent = numItems
+    init = invent*data[0]
+    budget = 0
     profits = []
     for i in range(1,len(data)):
         if data[i]>data[i-1]:
@@ -72,9 +74,10 @@ def persistanceProfit(data, budget):
         profits.append(((budget + invent * data[i]) - init) / init)
     return profits
 
-def crossOverProfit(ind, sig, data, budget):
-    init = budget
-    invent = 0
+def crossOverProfit(ind, sig, data, numItems):
+    invent = numItems
+    init = invent*data[0]
+    budget = 0
     profits = []
     for i in range(-1 * len(sig) + 1, -1, 1):
         if ind[i - 1] > sig[i - 1] and ind[i] < sig[i] and invent>0:

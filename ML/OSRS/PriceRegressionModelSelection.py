@@ -72,7 +72,7 @@ if __name__ == "__main__":
     featSizes = [10,5,5]
     print(int(sum(featSizes)**.5))
 
-    model = rm.RegressionModel(prices,[scale(prices),scale(sma5),scale(ema5)],featSizes,'sigmoid',int(sum(featSizes)**.5),0,.8,.9)
+    model = rm.RegressionModel(scale(prices),[scale(prices),scale(sma5),scale(ema5)],featSizes,'sigmoid',int(sum(featSizes)**.5),0,.8,.9)
 
     if False:
         similar = items.getSimilarItems(item,3)
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             simChanges = simChanges + items.getPriceChanges(items.getPrices(s[0]))
         model.changeTrainingData(simChanges,[simChanges],[21])
 
-    model.train(50,8)
+    model.train(100,8)
 
     prices = items.getPrices(item)
 
@@ -117,11 +117,11 @@ if __name__ == "__main__":
     budget = test_prices[0] * 101 - 1
     y_pred = model.predict(model.x_test)
 
-    scaler = StandardScaler()
-    scaler.fit(np.array(test_prices).reshape(-1,1))
+    #scaler = StandardScaler()
+    #scaler.fit(np.array(test_prices).reshape(-1,1))
 
     plt.plot(scale(test_prices))
-    plt.plot(scale(scaler.inverse_transform(y_pred.reshape(-1,1))))
+    plt.plot(y_pred)
     plt.show()
 
     print(len(test_prices), len(y_pred))
@@ -172,3 +172,7 @@ if __name__ == "__main__":
     print(profit[-1], profit_opt[-1], best[1], best[2])
     print(smaProf[-1], stchOscProf[-1], momProf[-1])
     print(smaProf_Pred[-1], stchOscProf_Pred[-1], momProf_Pred[-1])
+
+    plt.plot(profit)
+    plt.plot(BaH)
+    plt.show()

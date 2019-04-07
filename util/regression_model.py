@@ -73,8 +73,8 @@ class RegressionModel:
             self.x.append(xelem)
             self.y.append(labels[i])
 
-        self.y[:s2] = list(scaler.fit_transform(np.array(self.y[:s2]).reshape(-1, 1)).reshape(len(self.y[:s2]), ))
-        self.y[s2:] = list(scaler.fit_transform(np.array(self.y[s2:]).reshape(-1, 1)).reshape(len(self.y[s2:]), ))
+        #self.y[:s2] = list(scaler.fit_transform(np.array(self.y[:s2]).reshape(-1, 1)).reshape(len(self.y[:s2]), ))
+        #self.y[s2:] = list(scaler.fit_transform(np.array(self.y[s2:]).reshape(-1, 1)).reshape(len(self.y[s2:]), ))
 
         self.x_train = np.array(self.x[:s1])
         self.y_train = np.array(self.y[:s1])

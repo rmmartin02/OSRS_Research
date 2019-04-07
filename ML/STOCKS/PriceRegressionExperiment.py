@@ -85,7 +85,7 @@ def main():
 
                     # try to optimize out small predictions
                     test_prices = prices[len(model.y_train):len(model.y_train) + len(model.y_val)]
-                    numItems = test_prices[0] * 101 - 1
+                    numItems = 100
                     y_pred = model.predict(model.x_val)
 
                     print(len(test_prices), len(y_pred))

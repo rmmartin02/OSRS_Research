@@ -99,14 +99,13 @@ def main():
                     model.add(LSTM(4, input_shape=(1, look_back)))
                     model.add(Dense(1))
                     model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mae'])
-                    es = EarlyStopping(monitor='val_loss', mode='min', patience=10)
 
                     beforeScore = model.evaluate(testX, testY, batch_size=1)
                     print(beforeScore)
                     toWrite['startLoss'] = beforeScore[0]
                     toWrite['startMAE'] = beforeScore[1]
 
-                    history = model.fit(trainX, trainY, epochs=100, batch_size=16, validation_data=(valX, valY), callbacks=[es])
+                    history = model.fit(trainX, trainY, epochs=30, batch_size=16, validation_data=(valX, valY))
 
                     afterScore = model.evaluate(testX, testY, batch_size=1)
                     toWrite['endLoss'] = afterScore[0]

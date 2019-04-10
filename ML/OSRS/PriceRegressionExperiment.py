@@ -69,7 +69,7 @@ def main():
                     toWrite['startLoss'] = beforeScore[0]
                     toWrite['startMAE'] = beforeScore[1]
 
-                    model.train(100, 16)
+                    model.train(30, 16)
 
                     afterScore = model.getScore()
                     toWrite['endLoss'] = afterScore[0]

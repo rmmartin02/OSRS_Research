@@ -1,3 +1,5 @@
+#https://machinelearningmastery.com/time-series-prediction-lstm-recurrent-neural-networks-python-keras/
+
 import sys
 import os
 address = (os.sep).join(os.getcwd().split(os.sep)[:-2])
@@ -190,11 +192,12 @@ def main():
 
 def createList():
     keys = list(items.itemPrices.keys())
+    itemList = [item for item in keys if len(items.getQuants(item)) > 0 and np.mean(items.getQuants(item)[-7:]) > 100 and np.median(items.getPrices(item)[-7:]) > 100]
     for i in range(4):
-        s = len(items.itemPrices)//4
+        s = len(itemList)//4
         with open("ItemLists/list" + str(i), 'w') as f:
             for j in range(s):
-                f.write(keys[i*s+j]+"\n")
+                f.write(itemList[i*s+j]+"\n")
 
 if __name__ == "__main__":
     main()

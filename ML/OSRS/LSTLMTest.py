@@ -29,7 +29,7 @@ numpy.random.seed(7)
 # load the dataset
 #dataframe = read_csv('international-airline-passengers.csv', usecols=[1], engine='python', skipfooter=3)
 #dataset = dataframe.values
-item = "Nature_rune"
+item = "Abyssal_whip"
 dataset = numpy.array(items.getPrices(item)).reshape(-1,1)
 # normalize the dataset
 scaler = MinMaxScaler(feature_range=(0, 1))
@@ -95,12 +95,19 @@ stchOscProf = ts.crossOverProfit(stchOsc[0], stchOsc[1], testY, budget)
 mom = items.momentum(testY, 10)
 momProf = ts.crossOverProfit(mom[0], mom[1], testY, budget)
 
+buySigs = [testPredict[i] >= testY[i - 1] for i in range(1, len(testPredict))]
+buySigs = [False] + buySigs
+sellSigs = [testPredict[i] < testY[i - 1] for i in range(1, len(testPredict))]
+sellSigs = [False] + sellSigs
+print("lengths", len(buySigs), len(sellSigs), len(testY))
+profit = ts.modelProfit(buySigs, sellSigs, testY, budget)
+
 buySigs = [testPredict[i] >= testPredict[i - 1] for i in range(1, len(testPredict))]
 buySigs = [False] + buySigs
 sellSigs = [testPredict[i] < testPredict[i - 1] for i in range(1, len(testPredict))]
 sellSigs = [False] + sellSigs
 print("lengths", len(buySigs), len(sellSigs), len(testY))
-profit = ts.modelProfit(buySigs, sellSigs, testY, budget)
+profit_pred = ts.modelProfit(buySigs, sellSigs, testY, budget)
 
 smaProf_Pred = ts.crossOverProfit(items.sma(testPredict, 3), items.sma(testPredict, 12), testY, budget)
 stchOsc = items.stochOscil(testPredict, 3, 5)
@@ -109,7 +116,7 @@ mom = items.momentum(testPredict, 10)
 momProf_Pred = ts.crossOverProfit(mom[0], mom[1], testY, budget)
 
 print(perf[-1], pers[-1], BaH[-1])
-print(profit[-1])
+print(profit[-1],profit_pred[-1])
 print(smaProf[-1], stchOscProf[-1], momProf[-1])
 print(smaProf_Pred[-1], stchOscProf_Pred[-1], momProf_Pred[-1])
 
